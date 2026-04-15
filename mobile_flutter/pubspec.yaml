@@ -1,0 +1,38 @@
+name: resident_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker: ^1.0.7
+  cupertino_icons: ^1.0.8
+  flutter_secure_storage: ^9.0.0
+
+  # Bottom nav packages
+  iconly: ^1.0.1
+  navigation_view: ^1.0.4
+
+  # Weather & location
+  http: ^1.2.0
+  geolocator: ^12.0.0
+  permission_handler: ^11.3.0
+  flutter_dotenv: ^5.1.0
+  app_links: ^7.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+
+    - .env              # ← dotenv file (never commit this to Git)

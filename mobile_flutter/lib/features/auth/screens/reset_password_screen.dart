@@ -1,0 +1,302 @@
+import 'package:flutter/material.dart';
+import '../widgets/auth_scaffold.dart';
+
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+  final String otp;
+  const ResetPasswordScreen(
+      {super.key, required this.email, required this.otp});
+
+  @override
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final newPassword = TextEditingController();
+  final confirmPassword = TextEditingController();
+  bool loading = false;
+
+  @override
+  void dispose() {
+    newPassword.dispose();
+    confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resetPassword() async {
+    if (newPassword.text.isEmpty || confirmPassword.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in both fields'),
+          backgroundColor: Color(0xFF152E22),
+        ),
+      );
+      return;
+    }
+
+    if (newPassword.text != confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: Color(0xFF152E22),
+        ),
+      );
+      return;
+    }
+
+    if (newPassword.text.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 8 characters'),
+          backgroundColor: Color(0xFF152E22),
+        ),
+      );
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      // TODO: await AuthService.resetPassword(widget.email, widget.otp, newPassword.text);
+      await Future.delayed(const Duration(milliseconds: 900));
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset successfully!'),
+          backgroundColor: Color(0xFF152E22),
+        ),
+      );
+
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: const Color(0xFF152E22),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 32),
+
+          // ── Back button ──
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8D9B5).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFB8974A).withOpacity(0.25),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFFE8D9B5),
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Back',
+                  style: TextStyle(
+                    color: Color(0xFF6B9E80),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // ── Headline ──
+          const Text(
+            'NEW PASSWORD',
+            style: TextStyle(
+              color: Color(0xFFB8974A),
+              fontSize: 11,
+              letterSpacing: 2.0,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Reset your\npassword.',
+            style: TextStyle(
+              color: Color(0xFFE8D9B5),
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Choose a strong new password\nfor your account.',
+            style: TextStyle(
+              color: Color(0xFF6B9E80),
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Form panel ──
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF152E22),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DarkField(
+                  label: 'NEW PASSWORD',
+                  hint: 'Min. 8 characters',
+                  controller: newPassword,
+                  obscure: true,
+                ),
+                const SizedBox(height: 10),
+                _DarkField(
+                  label: 'CONFIRM PASSWORD',
+                  hint: 'Repeat your password',
+                  controller: confirmPassword,
+                  obscure: true,
+                ),
+                const SizedBox(height: 16),
+
+                // Reset button
+                SizedBox(
+                  width: double.infinity,
+                  child: GestureDetector(
+                    onTap: loading ? null : _resetPassword,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: loading
+                            ? const Color(0xFFB8974A).withOpacity(0.5)
+                            : const Color(0xFFB8974A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF1C3B2E),
+                              ),
+                            )
+                          : const Text(
+                              'Reset password',
+                              style: TextStyle(
+                                color: Color(0xFF1C3B2E),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  DARK THEMED TEXT FIELD
+// ─────────────────────────────────────────────────────────────
+class _DarkField extends StatelessWidget {
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final bool obscure;
+  final TextInputType keyboardType;
+
+  const _DarkField({
+    required this.label,
+    required this.hint,
+    required this.controller,
+    this.obscure = false,
+    this.keyboardType = TextInputType.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8D9B5).withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFB8974A).withOpacity(0.25),
+          width: 0.5,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF6B9E80),
+              fontSize: 10,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: controller,
+            obscureText: obscure,
+            keyboardType: keyboardType,
+            style: const TextStyle(
+              color: Color(0xFFE8D9B5),
+              fontSize: 14,
+            ),
+            cursorColor: const Color(0xFFB8974A),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: const Color(0xFFE8D9B5).withOpacity(0.25),
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

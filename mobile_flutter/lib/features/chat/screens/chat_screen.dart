@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'package:resident_app/features/chat/models/message.dart';
+import 'package:resident_app/features/chat/services/chat_service.dart';
+import 'package:resident_app/features/chat/widgets/message_bubble.dart';
+import 'package:resident_app/features/chat/widgets/chat_input_bar.dart';
+
+// ─────────────────────────────────────────────────────────────
+//  CHAT SCREEN
+//  Works for both group chat and private DMs.
+//  Pass isGroup: true for the group chat room.
+//  Pass isGroup: false for a private DM conversation.
+// ─────────────────────────────────────────────────────────────
+class ChatScreen extends StatefulWidget {
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+    required this.title,
+    required this.subtitle,
+    required this.isGroup,
+  });
+
+  final String conversationId;
+  final String title;
+  final String subtitle;
+  final bool   isGroup;
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+
+  final _scrollCtrl = ScrollController();
+  List<Message> _messages = [];
+  bool          _loading  = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Load ──────────────────────────────────────────────────────
+  Future<void> _load() async {
+    // ── RADJA ────────────────────────────────────────────────
+    // Right now both group and DM call mock data.
+    // When real API is ready:
+    //   if (widget.isGroup) → call fetchMessages()
+    //   else                → call fetchDmMessages(widget.conversationId)
+    final msgs = widget.isGroup
+        ? await ChatService.fetchMessages()
+        : await ChatService.fetchDmMessages(widget.conversationId);
+
+    if (mounted) {
+      setState(() { _messages = msgs; _loading = false; });
+      _scrollToBottom(animated: false);
+    }
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollCtrl.hasClients) return;
+      if (animated) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve:    Curves.easeOut,
+        );
+      } else {
+        _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
+      }
+    });
+  }
+
+  // ── Send text ─────────────────────────────────────────────────
+  void _onSendText(String text) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _messages.add(Message(
+        id:         DateTime.now().millisecondsSinceEpoch.toString(),
+        senderId:   ChatService.currentUserId,
+        senderName: ChatService.currentUserName,
+        senderUnit: ChatService.currentUserUnit,
+        content:    text,
+        type:       MessageType.text,
+        sentAt:     DateTime.now(),
+        isMe:       true,
+      ));
+    });
+    _scrollToBottom();
+
+    // ── RADJA ────────────────────────────────────────────────
+    // When real API is ready:
+    //   if (widget.isGroup) → ChatService.sendMessage(text)
+    //   else                → ChatService.sendDmMessage(widget.conversationId, text)
+    if (widget.isGroup) {
+      ChatService.sendMessage(text);
+    } else {
+      ChatService.sendDmMessage(widget.conversationId, text);
+    }
+  }
+
+  // ── Send image ────────────────────────────────────────────────
+  void _onSendImage(String path) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _messages.add(Message(
+        id:         DateTime.now().millisecondsSinceEpoch.toString(),
+        senderId:   ChatService.currentUserId,
+        senderName: ChatService.currentUserName,
+        senderUnit: ChatService.currentUserUnit,
+        content:    path,
+        type:       MessageType.image,
+        sentAt:     DateTime.now(),
+        isMe:       true,
+      ));
+    });
+    _scrollToBottom();
+
+    if (widget.isGroup) {
+      ChatService.sendImage(path);
+    } else {
+      ChatService.sendDmImage(widget.conversationId, path);
+    }
+  }
+
+  // ── Date separator ────────────────────────────────────────────
+  Widget _dateSeparator(DateTime date) {
+    final now    = DateTime.now();
+    final today  = DateTime(now.year, now.month, now.day);
+    final msgDay = DateTime(date.year, date.month, date.day);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    final label = msgDay == today
+        ? 'Today'
+        : msgDay == today.subtract(const Duration(days: 1))
+            ? 'Yesterday'
+            : '${months[date.month - 1]} ${date.day}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(children: [
+        Expanded(child: Container(height: 1,
+            color: const Color(0xFFB8974A).withOpacity(0.20))),
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color:        const Color(0xFFB8974A).withOpacity(0.10),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+                color: const Color(0xFFB8974A).withOpacity(0.25), width: 1),
+          ),
+          child: Text(label, style: const TextStyle(
+              color: Color(0xFFB8974A), fontSize: 11,
+              fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Container(height: 1,
+            color: const Color(0xFFB8974A).withOpacity(0.20))),
+      ]),
+    );
+  }
+
+  List<Widget> _buildList() {
+    final items    = <Widget>[];
+    DateTime? last;
+    for (final msg in _messages) {
+      final day = DateTime(msg.sentAt.year, msg.sentAt.month, msg.sentAt.day);
+      if (last == null || day != last) {
+        items.add(_dateSeparator(msg.sentAt));
+        last = day;
+      }
+      items.add(MessageBubble(message: msg));
+    }
+    return items;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F0E8),
+      body: Column(
+        children: [
+
+          // ── App bar ────────────────────────────────────────
+          Container(
+            padding: EdgeInsets.only(
+              top:    MediaQuery.of(context).padding.top + 12,
+              left:   16, right: 16, bottom: 16,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1C3B2E),
+              borderRadius: BorderRadius.only(
+                bottomLeft:  Radius.circular(28),
+                bottomRight: Radius.circular(28),
+              ),
+            ),
+            child: Row(children: [
+
+              // Back
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color:        const Color(0xFFE8D9B5).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Color(0xFFE8D9B5), size: 16),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Icon
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color:        const Color(0xFFE8D9B5).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                      color: const Color(0xFFB8974A).withOpacity(0.30),
+                      width: 1),
+                ),
+                child: Icon(
+                  widget.isGroup
+                      ? Icons.groups_rounded
+                      : Icons.person_rounded,
+                  color: const Color(0xFFE8D9B5), size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Title + subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.title,
+                        style: const TextStyle(
+                            color:      Color(0xFFE8D9B5),
+                            fontSize:   16,
+                            fontWeight: FontWeight.w700)),
+                    Text(widget.subtitle,
+                        style: const TextStyle(
+                            color: Color(0xFF6B9E80), fontSize: 12)),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+
+          // ── Messages ───────────────────────────────────────
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(
+                    color: Color(0xFFB8974A), strokeWidth: 2))
+                : _messages.isEmpty
+                    ? _emptyState()
+                    : ListView(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.only(top: 8, bottom: 12),
+                        children: _buildList(),
+                      ),
+          ),
+
+          // ── Input ──────────────────────────────────────────
+          ChatInputBar(
+            onSendText:  _onSendText,
+            onSendImage: _onSendImage,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState() => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 72, height: 72,
+          decoration: BoxDecoration(
+            color:        const Color(0xFFB8974A).withOpacity(0.10),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: const Icon(Icons.chat_bubble_outline_rounded,
+              color: Color(0xFFB8974A), size: 32),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          widget.isGroup ? 'No messages yet' : 'Start the conversation',
+          style: const TextStyle(color: Color(0xFF1A1A1A),
+              fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(
+          widget.isGroup ? 'Be the first to say hello!' : 'Say hi 👋',
+          style: const TextStyle(color: Color(0xFF9A9A9A), fontSize: 13)),
+      ],
+    ),
+  );
+}
