@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
-import { getResidents } from "../../api/residents.api";
+import { getResidents, updateResident } from "../../api/residents.api";
 import "./Residents.css";
 
-const emptyForm = { name: "", unit: "", phone: "", email: "" };
+const emptyForm = { username: "", unit: "", phone: "", email: "" };
 
 const Residents = () => {
   const [residents, setResidents] = useState([]);
@@ -28,12 +28,14 @@ const Residents = () => {
           .filter((user) => user.role === "resident")
           .map((user) => ({
             id: String(user.id),
-            name: user.full_name || user.username || "Unnamed user",
+            username: user.username || "",
+            name: user.username || "Unnamed user",
             email: user.email || "",
             unit: user.unit || "—",
             phone: user.phone || "—",
             status: user.is_active ? "active" : "suspended",
-            username: user.username || "",
+            email_verified: user.email_verified,
+            role: user.role,
             raw: user,
           }));
 
@@ -71,8 +73,15 @@ const Residents = () => {
     setFormSuccess("");
   };
 
-  const handleEdit = () => {
-    setFormError("Edit will be connected in the next step.");
+  const handleEdit = (resident) => {
+    setEditId(resident.id);
+    setForm({
+      username: resident.username,
+      unit: resident.unit === "—" ? "" : resident.unit,
+      phone: resident.phone === "—" ? "" : resident.phone,
+      email: resident.email,
+    });
+    setFormError("");
     setFormSuccess("");
   };
 
@@ -85,8 +94,56 @@ const Residents = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormError("Create resident will be connected in the next step.");
+    setFormError("");
     setFormSuccess("");
+
+    if (!form.username || !form.email) {
+      setFormError("Username and email are required.");
+      return;
+    }
+
+    if (!editId) {
+      setFormError("Create resident will be connected in the next step.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        username: form.username,
+        email: form.email,
+      };
+
+      const updated = await updateResident(editId, payload);
+
+      setResidents((prev) =>
+        prev.map((r) =>
+          r.id === String(updated.id)
+            ? {
+                ...r,
+                username: updated.username,
+                name: updated.username,
+                email: updated.email,
+                status: updated.is_active ? "active" : "suspended",
+                email_verified: updated.email_verified,
+                role: updated.role,
+                raw: updated,
+              }
+            : r
+        )
+      );
+
+      setFormSuccess("Resident updated successfully.");
+      setEditId(null);
+      setForm(emptyForm);
+    } catch (err) {
+      setFormError(
+        err?.response?.data?.detail || "Failed to update resident."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggleStatus = async () => {
@@ -183,7 +240,7 @@ const Residents = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {loading && residents.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="res-empty">
                         Loading residents...
@@ -242,12 +299,12 @@ const Residents = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="res-rp-form">
-              <label className="res-rp-field-label">Full name</label>
+              <label className="res-rp-field-label">Username</label>
               <input
                 className="res-rp-input"
-                name="name"
-                placeholder="e.g. Ahmed Benali"
-                value={form.name}
+                name="username"
+                placeholder="e.g. ahmedbenali"
+                value={form.username}
                 onChange={handleFormChange}
               />
 
@@ -258,6 +315,7 @@ const Residents = () => {
                 placeholder="e.g. A-12"
                 value={form.unit}
                 onChange={handleFormChange}
+                disabled
               />
 
               <label className="res-rp-field-label">Phone</label>
@@ -267,6 +325,7 @@ const Residents = () => {
                 placeholder="+213..."
                 value={form.phone}
                 onChange={handleFormChange}
+                disabled
               />
 
               <label className="res-rp-field-label">Email</label>
@@ -282,8 +341,16 @@ const Residents = () => {
               {formError && <p className="res-rp-error">{formError}</p>}
               {formSuccess && <p className="res-rp-success">{formSuccess}</p>}
 
-              <button type="submit" className="res-rp-btn">
-                {editId ? "Save changes" : "Create account"}
+              <button
+                type="submit"
+                className="res-rp-btn"
+                disabled={loading}
+              >
+                {loading
+                  ? "Saving..."
+                  : editId
+                  ? "Save changes"
+                  : "Create account"}
               </button>
 
               {editId && (
