@@ -16,24 +16,21 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
 
   final hasResidentSession = await AuthService.isLoggedIn();
-  final initialActivationLaunch = await _resolveInitialActivationLaunch();
+  final initialAppLaunch = await _resolveInitialAppLaunch();
 
   runApp(
-    MyApp(
-      isLoggedIn: hasResidentSession,
-      initialActivationLaunch: initialActivationLaunch,
-    ),
+    MyApp(isLoggedIn: hasResidentSession, initialAppLaunch: initialAppLaunch),
   );
 }
 
 class MyApp extends StatefulWidget {
   final bool isLoggedIn;
-  final _ActivationLaunch initialActivationLaunch;
+  final _AppLaunch initialAppLaunch;
 
   const MyApp({
     super.key,
     required this.isLoggedIn,
-    required this.initialActivationLaunch,
+    required this.initialAppLaunch,
   });
 
   @override
@@ -45,8 +42,7 @@ class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
 
-  late final _ActivationLaunch _initialActivationLaunch =
-      widget.initialActivationLaunch;
+  late final _AppLaunch _initialAppLaunch = widget.initialAppLaunch;
 
   @override
   void initState() {
@@ -64,13 +60,17 @@ class _MyAppState extends State<MyApp> {
     if (kIsWeb) return;
 
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      final launch = _activationLaunchFromUri(uri);
+      final launch = _appLaunchFromUri(uri);
       if (launch == null || !launch.shouldOpen) return;
 
+      final arguments = launch.routeName == '/activate'
+          ? {'token': launch.token}
+          : null;
+
       _navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/activate',
+        launch.routeName,
         (route) => false,
-        arguments: {'token': launch.token},
+        arguments: arguments,
       );
     });
   }
@@ -86,11 +86,11 @@ class _MyAppState extends State<MyApp> {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
       ),
-      initialRoute: _initialActivationLaunch.shouldOpen
-          ? '/activate'
+      initialRoute: _initialAppLaunch.shouldOpen
+          ? _initialAppLaunch.routeName
           : widget.isLoggedIn
-              ? '/home'
-              : '/welcome',
+          ? '/home'
+          : '/welcome',
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/home':
@@ -102,14 +102,16 @@ class _MyAppState extends State<MyApp> {
           case '/activate':
             final token =
                 _extractActivationToken(settings.arguments) ??
-                _initialActivationLaunch.token;
+                _initialAppLaunch.token;
             return fadeSlideRoute(ActivateAccountScreen(token: token));
           default:
-            final fallback = _initialActivationLaunch.shouldOpen
-                ? ActivateAccountScreen(token: _initialActivationLaunch.token)
+            final fallback = _initialAppLaunch.shouldOpen
+                ? (_initialAppLaunch.routeName == '/activate'
+                      ? ActivateAccountScreen(token: _initialAppLaunch.token)
+                      : const LoginScreen())
                 : widget.isLoggedIn
-                    ? const MainNavigationScreen()
-                    : const WelcomeScreen();
+                ? const MainNavigationScreen()
+                : const WelcomeScreen();
             return fadeSlideRoute(fallback);
         }
       },
@@ -117,18 +119,20 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class _ActivationLaunch {
+class _AppLaunch {
   final bool shouldOpen;
+  final String routeName;
   final String? token;
 
-  const _ActivationLaunch({
+  const _AppLaunch({
     this.shouldOpen = false,
+    this.routeName = '/welcome',
     this.token,
   });
 }
 
-Future<_ActivationLaunch> _resolveInitialActivationLaunch() async {
-  final fromBase = _resolveActivationLaunchFromBaseUri();
+Future<_AppLaunch> _resolveInitialAppLaunch() async {
+  final fromBase = _resolveAppLaunchFromBaseUri();
   if (fromBase.shouldOpen) {
     return fromBase;
   }
@@ -137,20 +141,20 @@ Future<_ActivationLaunch> _resolveInitialActivationLaunch() async {
     try {
       final appLinks = AppLinks();
       final initialUri = await appLinks.getInitialLink();
-      final fromMobileLink = _activationLaunchFromUri(initialUri);
+      final fromMobileLink = _appLaunchFromUri(initialUri);
       if (fromMobileLink != null) {
         return fromMobileLink;
       }
     } catch (_) {
-      // Ignore unavailable or malformed initial links and continue normally.
+      // Ignore unavailable or malformed initial links.
     }
   }
 
-  return const _ActivationLaunch();
+  return const _AppLaunch();
 }
 
-_ActivationLaunch _resolveActivationLaunchFromBaseUri() {
-  final direct = _activationLaunchFromUri(Uri.base);
+_AppLaunch _resolveAppLaunchFromBaseUri() {
+  final direct = _appLaunchFromUri(Uri.base);
   if (direct != null) return direct;
 
   final fragment = Uri.base.fragment.trim();
@@ -159,14 +163,14 @@ _ActivationLaunch _resolveActivationLaunchFromBaseUri() {
         ? fragment
         : '/$fragment';
     final fragmentUri = Uri.tryParse(normalizedFragment);
-    final fragmentLaunch = _activationLaunchFromUri(fragmentUri);
+    final fragmentLaunch = _appLaunchFromUri(fragmentUri);
     if (fragmentLaunch != null) return fragmentLaunch;
   }
 
-  return const _ActivationLaunch();
+  return const _AppLaunch();
 }
 
-_ActivationLaunch? _activationLaunchFromUri(Uri? uri) {
+_AppLaunch? _appLaunchFromUri(Uri? uri) {
   if (uri == null) return null;
 
   final token = uri.queryParameters['token']?.trim();
@@ -176,21 +180,28 @@ _ActivationLaunch? _activationLaunchFromUri(Uri? uri) {
       .toList();
 
   final host = uri.host.toLowerCase();
+
   final isActivationPath =
       segments.contains('activate') ||
       segments.contains('activation') ||
       host == 'activate' ||
       host == 'activation';
-  final hasToken = token != null && token.isNotEmpty;
 
-  if (!isActivationPath && !hasToken) {
-    return null;
+  final isLoginPath = segments.contains('login') || host == 'login';
+
+  if (isLoginPath) {
+    return const _AppLaunch(shouldOpen: true, routeName: '/login');
   }
 
-  return _ActivationLaunch(
-    shouldOpen: true,
-    token: hasToken ? token : null,
-  );
+  if (isActivationPath) {
+    return _AppLaunch(
+      shouldOpen: true,
+      routeName: '/activate',
+      token: (token != null && token.isNotEmpty) ? token : null,
+    );
+  }
+
+  return null;
 }
 
 String? _extractActivationToken(Object? arguments) {
