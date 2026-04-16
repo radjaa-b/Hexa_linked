@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
-import { getResidents, updateResident } from "../../api/residents.api";
+import {
+  getResidents,
+  updateResident,
+  updateResidentStatus,
+} from "../../api/residents.api";
 import "./Residents.css";
 
 const emptyForm = { username: "", unit: "", phone: "", email: "" };
@@ -146,9 +150,47 @@ const Residents = () => {
     }
   };
 
-  const handleToggleStatus = async () => {
-    setFormError("Activate / suspend will be connected in the next step.");
+  const handleToggleStatus = async (resident) => {
+    setPageError("");
+    setFormError("");
     setFormSuccess("");
+
+    const nextStatus =
+      resident.status === "active" ? "suspended" : "active";
+
+    try {
+      await updateResidentStatus({
+        id: resident.id,
+        email: resident.email,
+        nextStatus,
+      });
+
+      setResidents((prev) =>
+        prev.map((r) =>
+          r.id === resident.id
+            ? {
+                ...r,
+                status: nextStatus,
+              }
+            : r
+        )
+      );
+
+      if (editId === resident.id) {
+        setEditId(null);
+        setForm(emptyForm);
+      }
+
+      setFormSuccess(
+        nextStatus === "active"
+          ? "Resident reactivated successfully."
+          : "Resident suspended successfully."
+      );
+    } catch (err) {
+      setPageError(
+        err?.response?.data?.detail || "Failed to update resident status."
+      );
+    }
   };
 
   return (
@@ -227,6 +269,7 @@ const Residents = () => {
             </div>
 
             {pageError && <p className="res-rp-error">{pageError}</p>}
+            {formSuccess && !editId && <p className="res-rp-success">{formSuccess}</p>}
 
             <div className="res-table-wrap">
               <table className="res-table">
@@ -339,7 +382,7 @@ const Residents = () => {
               />
 
               {formError && <p className="res-rp-error">{formError}</p>}
-              {formSuccess && <p className="res-rp-success">{formSuccess}</p>}
+              {formSuccess && editId && <p className="res-rp-success">{formSuccess}</p>}
 
               <button
                 type="submit"

@@ -25,14 +25,15 @@ export const updateResident = async (id, data) => {
   return response.data;
 };
 
-export const updateResidentStatus = async (id, status) => {
-  if (status === "active") {
+// nextStatus must be "active" or "suspended"
+export const updateResidentStatus = async ({ id, email, nextStatus }) => {
+  if (nextStatus === "active") {
     const response = await axiosInstance.patch(`/admin/users/${id}/reactivate`);
     return response.data;
   }
 
   const response = await axiosInstance.patch("/auth/admin/deactivate", null, {
-    params: { email: status.email },
+    params: { email },
   });
   return response.data;
 };
