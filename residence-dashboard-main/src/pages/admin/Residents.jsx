@@ -5,6 +5,7 @@ import {
   createResident,
   updateResident,
   updateResidentStatus,
+  deleteResident,
 } from "../../api/residents.api";
 import "./Residents.css";
 
@@ -240,6 +241,35 @@ const Residents = () => {
     }
   };
 
+  const handleDelete = async (resident) => {
+    setPageError("");
+    setFormError("");
+    setFormSuccess("");
+
+    const confirmed = window.confirm(
+      `Delete ${resident.name}? This will soft-delete the account and preserve history/logs.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteResident(resident.id);
+
+      setResidents((prev) => prev.filter((r) => r.id !== resident.id));
+
+      if (editId === resident.id) {
+        setEditId(null);
+        setForm(emptyForm);
+      }
+
+      setFormSuccess("Resident deleted successfully.");
+    } catch (err) {
+      setPageError(
+        err?.response?.data?.detail || "Failed to delete resident."
+      );
+    }
+  };
+
   return (
     <PageWrapper>
       <div className="res-layout">
@@ -373,6 +403,12 @@ const Residents = () => {
                               onClick={() => handleToggleStatus(r)}
                             >
                               {r.status === "active" ? "Suspend" : "Activate"}
+                            </button>
+                            <button
+                              className="res-act delete"
+                              onClick={() => handleDelete(r)}
+                            >
+                              Delete
                             </button>
                           </div>
                         </td>

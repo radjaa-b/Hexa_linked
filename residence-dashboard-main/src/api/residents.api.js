@@ -37,3 +37,8 @@ export const updateResidentStatus = async ({ id, email, nextStatus }) => {
   });
   return response.data;
 };
+
+export const deleteResident = async (id) => {
+  const response = await axiosInstance.delete(`/admin/users/${id}`);
+  return response.data;
+};
