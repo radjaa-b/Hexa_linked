@@ -2,12 +2,19 @@ import { useState, useEffect } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import {
   getResidents,
+  createResident,
   updateResident,
   updateResidentStatus,
 } from "../../api/residents.api";
 import "./Residents.css";
 
-const emptyForm = { username: "", unit: "", phone: "", email: "" };
+const emptyForm = {
+  username: "",
+  full_name: "",
+  unit: "",
+  phone: "",
+  email: "",
+};
 
 const Residents = () => {
   const [residents, setResidents] = useState([]);
@@ -33,7 +40,7 @@ const Residents = () => {
           .map((user) => ({
             id: String(user.id),
             username: user.username || "",
-            name: user.username || "Unnamed user",
+            name: user.username || user.full_name || "Unnamed user",
             email: user.email || "",
             unit: user.unit || "—",
             phone: user.phone || "—",
@@ -81,6 +88,7 @@ const Residents = () => {
     setEditId(resident.id);
     setForm({
       username: resident.username,
+      full_name: "",
       unit: resident.unit === "—" ? "" : resident.unit,
       phone: resident.phone === "—" ? "" : resident.phone,
       email: resident.email,
@@ -101,13 +109,52 @@ const Residents = () => {
     setFormError("");
     setFormSuccess("");
 
-    if (!form.username || !form.email) {
-      setFormError("Username and email are required.");
+    // CREATE MODE
+    if (!editId) {
+      if (!form.full_name || !form.email) {
+        setFormError("Full name and email are required.");
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const created = await createResident({
+          email: form.email,
+          full_name: form.full_name,
+          role: "resident",
+        });
+
+        const newResident = {
+          id: String(created.id),
+          username: created.full_name || "",
+          name: created.full_name || "Unnamed user",
+          email: created.email || "",
+          unit: "—",
+          phone: "—",
+          status: "active",
+          email_verified: created.email_verified,
+          role: created.role,
+          raw: created,
+        };
+
+        setResidents((prev) => [newResident, ...prev]);
+        setFormSuccess("Resident created successfully. Activation email sent.");
+        setForm(emptyForm);
+      } catch (err) {
+        setFormError(
+          err?.response?.data?.detail || "Failed to create resident."
+        );
+      } finally {
+        setLoading(false);
+      }
+
       return;
     }
 
-    if (!editId) {
-      setFormError("Create resident will be connected in the next step.");
+    // EDIT MODE
+    if (!form.username || !form.email) {
+      setFormError("Username and email are required.");
       return;
     }
 
@@ -269,7 +316,9 @@ const Residents = () => {
             </div>
 
             {pageError && <p className="res-rp-error">{pageError}</p>}
-            {formSuccess && !editId && <p className="res-rp-success">{formSuccess}</p>}
+            {formSuccess && !editId && (
+              <p className="res-rp-success">{formSuccess}</p>
+            )}
 
             <div className="res-table-wrap">
               <table className="res-table">
@@ -342,6 +391,19 @@ const Residents = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="res-rp-form">
+              {!editId && (
+                <>
+                  <label className="res-rp-field-label">Full name</label>
+                  <input
+                    className="res-rp-input"
+                    name="full_name"
+                    placeholder="e.g. Ahmed Benali"
+                    value={form.full_name}
+                    onChange={handleFormChange}
+                  />
+                </>
+              )}
+
               <label className="res-rp-field-label">Username</label>
               <input
                 className="res-rp-input"
@@ -349,6 +411,7 @@ const Residents = () => {
                 placeholder="e.g. ahmedbenali"
                 value={form.username}
                 onChange={handleFormChange}
+                disabled={!editId}
               />
 
               <label className="res-rp-field-label">Unit number</label>
@@ -382,7 +445,9 @@ const Residents = () => {
               />
 
               {formError && <p className="res-rp-error">{formError}</p>}
-              {formSuccess && editId && <p className="res-rp-success">{formSuccess}</p>}
+              {formSuccess && editId && (
+                <p className="res-rp-success">{formSuccess}</p>
+              )}
 
               <button
                 type="submit"
@@ -408,7 +473,7 @@ const Residents = () => {
 
               {!editId && (
                 <p className="res-rp-note">
-                  Create resident will be connected in the next step
+                  Activation email will be sent automatically to the resident
                 </p>
               )}
             </form>
