@@ -1,0 +1,305 @@
+.dash-layout {
+  display: flex;
+  gap: 20px;
+  min-height: 100%;
+}
+
+/* ── Main ── */
+.dash-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Hero */
+.dash-hero {
+  background: #111f11;
+  border-radius: 18px;
+  padding: 32px 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-hero-hex {
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  pointer-events: none;
+}
+
+.dash-hero-tag {
+  font-size: 11px;
+  color: #5DCAA5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.dash-hero-title {
+  font-size: 32px;
+  font-weight: 500;
+  color: white;
+  line-height: 1.25;
+  margin-bottom: 28px;
+}
+
+.dash-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.dash-hs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dash-hs-val {
+  font-size: 26px;
+  font-weight: 500;
+  color: white;
+}
+
+.dash-hs-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.dash-hs-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Cards row */
+.dash-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dash-card {
+ background: #111f11;;
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 0.5px solid #d6d4d4;
+}
+
+.dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dash-card-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(238, 231, 231, 0.85);
+}
+
+.dash-card-more {
+  font-size: 11px;
+  color: #d7cfcf;
+  cursor: pointer;
+}
+
+.dash-card-more:hover {
+  text-decoration: underline;
+}
+
+/* Log items */
+.dash-log-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 0.5px solid #000000;
+}
+
+.dash-log-item:last-child {
+  border-bottom: none;
+}
+
+.dash-log-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-log-icon.entry {
+  background: #edfaf5;
+}
+
+.dash-log-icon.alert {
+  background: #fdf0f0;
+}
+
+.dash-log-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-log-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(208, 203, 203, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-log-unit {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.dash-log-time {
+  font-size: 10px;
+  color: #bbb;
+  flex-shrink: 0;
+}
+
+.dash-badge {
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── Right panel ── */
+.dash-right {
+  width: 260px;
+  background: #111f11;
+  border-radius: 18px;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+}
+
+.dash-rp-title {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+
+.dash-rp-stat {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 14px;
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 8px;
+}
+
+.dash-rp-val {
+  font-size: 24px;
+  font-weight: 500;
+  color: white;
+  line-height: 1;
+}
+
+.dash-rp-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 4px;
+}
+
+.dash-rp-trend {
+  font-size: 10px;
+  margin-top: 6px;
+}
+
+.dash-rp-trend.down { color: #5DCAA5; }
+.dash-rp-trend.up   { color: #e67e22; }
+
+.dash-rp-alert {
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.dash-rp-alert.danger {
+  background: rgba(231, 76, 60, 0.1);
+  border: 0.5px solid rgba(231, 76, 60, 0.2);
+}
+
+.dash-rp-alert.warning {
+  background: rgba(230, 126, 34, 0.1);
+  border: 0.5px solid rgba(230, 126, 34, 0.2);
+}
+
+.dash-rp-alert-title {
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.dash-rp-alert.danger  .dash-rp-alert-title { color: #f08080; }
+.dash-rp-alert.warning .dash-rp-alert-title { color: #f0a070; }
+
+.dash-rp-alert-sub {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.dash-rp-visitor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.dash-rp-visitor:last-child {
+  border-bottom: none;
+}
+
+.dash-rp-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2d5a2d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: white;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dash-rp-vname {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-rp-vbadge {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(93, 202, 165, 0.15);
+  color: #5DCAA5;
+  flex-shrink: 0;
+}

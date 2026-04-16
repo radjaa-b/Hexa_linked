@@ -1,0 +1,21 @@
+.pw-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #f7f7f4;
+}
+
+.pw-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #f7f7f4;
+}
+
+.pw-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}

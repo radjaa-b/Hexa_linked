@@ -1,0 +1,377 @@
+.act-page {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ── Left panel ── */
+.act-left {
+  flex: 1.1;
+  position: relative;
+  background: linear-gradient(160deg, #1a2e1a 0%, #2d4a2d 40%, #1a3a2a 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.act-left-hex {
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  pointer-events: none;
+}
+
+.act-left-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 40px 52px;
+}
+
+.act-left-tag {
+  font-size: 11px;
+  color: #5DCAA5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.act-left-content h1 {
+  color: white;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.act-left-content p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 280px;
+}
+
+.act-wave {
+  position: absolute;
+  right: -1px;
+  top: 0;
+  height: 100%;
+  width: 60px;
+  background: #f5f5f2;
+  clip-path: polygon(100% 0%, 100% 100%, 0% 100%, 40% 75%, 10% 50%, 40% 25%);
+  z-index: 3;
+}
+
+/* ── Right panel ── */
+.act-right {
+  flex: 1;
+  background: #f5f5f2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 48px;
+  overflow-y: auto;
+}
+
+.act-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.act-app-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1a2e1a;
+}
+
+/* Account banner */
+.act-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 0.5px solid #e0e0da;
+  border-left: 3px solid #1D9E75;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.act-banner-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #111f11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.act-banner-info { flex: 1; }
+
+.act-banner-title {
+  font-size: 11px;
+  color: #1D9E75;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.act-banner-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.act-role-badge {
+  font-size: 10px;
+  background: #edfaf5;
+  color: #0F6E56;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.act-banner-check { flex-shrink: 0; }
+
+/* Form */
+.act-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: #1a2e1a;
+  margin-bottom: 6px;
+}
+
+.act-subtitle {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.act-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.act-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.act-input-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.act-input {
+  width: 100%;
+  background: white;
+  border: 0.5px solid #ddd;
+  border-radius: 10px;
+  padding: 11px 40px 11px 14px;
+  font-size: 13px;
+  color: #1a2e1a;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.act-input:focus  { border-color: #2d5a2d; }
+.act-input.match  { border-color: #1D9E75; }
+.act-input.mismatch { border-color: #e74c3c; }
+.act-input::placeholder { color: #bbb; }
+
+.act-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+/* Strength */
+.act-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.act-strength-bars {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.act-strength-bar {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.act-strength-label {
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Match message */
+.act-match-msg {
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.act-match-msg.ok { color: #1D9E75; }
+.act-match-msg.no { color: #e74c3c; }
+
+/* Requirements */
+.act-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 16px;
+}
+
+.act-req {
+  font-size: 11px;
+  color: #aaa;
+  transition: color 0.2s;
+}
+
+.act-req.met { color: #1D9E75; }
+
+/* Error */
+.act-error {
+  font-size: 12px;
+  color: #e74c3c;
+  background: #fdf0f0;
+  border: 0.5px solid #f5c6c6;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+}
+
+/* Submit */
+.act-submit-btn {
+  width: 100%;
+  height: 46px;
+  background: #1a3a1a;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.act-submit-btn:hover    { background: #1D9E75; }
+.act-submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+/* Success state */
+.act-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.act-success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #edfaf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.act-success h2 {
+  font-size: 24px;
+  font-weight: 500;
+  color: #1a2e1a;
+}
+
+.act-success p {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+/* Invalid state */
+.act-invalid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.act-invalid h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: #1a2e1a;
+}
+
+.act-invalid p {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+.act-login-btn {
+  margin-top: 8px;
+  padding: 10px 28px;
+  background: #1a3a1a;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.act-login-btn:hover { background: #1D9E75; }
+
+/* Footer */
+.act-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: #bbb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .act-left { display: none; }
+  .act-right { padding: 0 28px; }
+}

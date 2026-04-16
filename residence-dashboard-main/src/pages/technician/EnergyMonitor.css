@@ -1,0 +1,244 @@
+.em-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Hero */
+.em-hero {
+  background: #111f11;
+  border-radius: 16px;
+  padding: 22px 28px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.em-hero-hex {
+  position: absolute;
+  right: 60px;
+  top: -20px;
+  pointer-events: none;
+}
+
+.em-hero-tag {
+  font-size: 10px;
+  color: #5DCAA5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.em-hero-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: white;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.em-alert-badge {
+  font-size: 11px;
+  background: #e74c3c;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.em-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.em-hs { display: flex; flex-direction: column; gap: 2px; }
+.em-hs-val   { font-size: 20px; font-weight: 500; color: white; }
+.em-hs-label { font-size: 10px; color: rgba(255,255,255,0.35); }
+.em-hs-div   { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
+
+.em-toggle {
+  display: inline-flex;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.em-tog {
+  padding: 5px 16px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.em-tog.active { background: #1D9E75; color: white; }
+
+/* Alerts bar */
+.em-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.em-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fdf0e0;
+  border: 0.5px solid #f5c88a;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.em-alert-zone {
+  font-size: 12px;
+  font-weight: 500;
+  color: #854F0B;
+  flex-shrink: 0;
+}
+
+.em-alert-msg {
+  font-size: 12px;
+  color: #854F0B;
+}
+
+/* Zone cards */
+.em-zones {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.em-zone {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  border: 0.5px solid #e0e0da;
+  transition: border-color 0.15s;
+}
+
+.em-zone.alert { border-color: #f5c6c6; background: #fdf8f8; }
+.em-zone.high  { border-color: #f5d8a8; background: #fdfaf5; }
+
+.em-zone-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.em-zone-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+}
+
+.em-zone-status {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.em-zone-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.em-zone-metric { flex: 1; }
+
+.em-zone-metric-val {
+  font-size: 18px;
+  font-weight: 500;
+  color: #111f11;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.em-zone-unit {
+  font-size: 11px;
+  color: #aaa;
+  margin-left: 3px;
+  font-weight: 400;
+}
+
+.em-zone-metric-label {
+  font-size: 10px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.em-zone-bar-wrap {
+  height: 4px;
+  background: #f0f0ec;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.em-zone-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.em-zone-bar.elec  { background: #1D9E75; }
+.em-zone-bar.water { background: #185FA5; }
+
+.em-zone-divider {
+  width: 1px;
+  height: 48px;
+  background: #f0f0ec;
+  flex-shrink: 0;
+}
+
+/* Charts */
+.em-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.em-chart-card {
+  background: white;
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 0.5px solid #e0e0da;
+}
+
+.em-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.em-chart-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+}
+
+.em-chart-sub { font-size: 11px; color: #aaa; }
+
+.em-tooltip {
+  background: #111f11;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.em-tooltip-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+.em-tooltip-val   { font-size: 13px; font-weight: 500; color: white; }
