@@ -20,3 +20,7 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+fastapi_project/core/firebase_credentials.json
+fastapi_project/.env
+mobile_flutter/.env
