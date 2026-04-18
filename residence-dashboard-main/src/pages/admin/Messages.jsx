@@ -143,7 +143,7 @@ const Communication = () => {
             authorId: String(item.author_user_id),
             authorName: item.author_username || "Unknown user",
             authorRole: item.author_role || "",
-            pinned: false,
+            pinned: item.is_pinned,
           }))
         : [];
 
@@ -216,11 +216,14 @@ const Communication = () => {
         await updateAnnouncement(editAnnId, {
           title: annForm.title,
           content: annForm.body,
+          is_pinned: annForm.pinned,
+          
         });
       } else {
         await createAnnouncement({
           title: annForm.title,
           content: annForm.body,
+          is_pinned: annForm.pinned,
         });
       }
 
