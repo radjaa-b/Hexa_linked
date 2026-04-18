@@ -20,13 +20,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _pageIndex = 0;
 
   void _openEmergencyScreen() {
-  HapticFeedback.heavyImpact();
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const EmergencyDialog(),
-  );
-}
+    HapticFeedback.heavyImpact();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const EmergencyDialog(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +35,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       extendBody: true,
       body: IndexedStack(
         index: _pageIndex,
-        children: const [
-          ResidentHomeScreen(),    // 0 — Home
-          ChatListScreen(),        // 1 — Chat
-          RequestsHubScreen(),     // 2 — Requests
-          ProfileScreen(),         // 3 — Profile
+        children: [
+          const ResidentHomeScreen(), // 0 — Home
+          const ChatListScreen(), // 1 — Chat
+          const RequestsHubScreen(), // 2 — Requests
+          const ProfileScreen(), // 3 — Profile
         ],
       ),
       bottomNavigationBar: ResidentBottomBar(
@@ -47,10 +47,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onTabSelected: (index) => setState(() => _pageIndex = index),
         onEmergencyTap: _openEmergencyScreen,
         items: const [
-          ResidentBottomBarItem(icon: Icons.home_rounded,        label: 'Home'),
+          ResidentBottomBarItem(icon: Icons.home_rounded, label: 'Home'),
           ResidentBottomBarItem(icon: Icons.chat_bubble_rounded, label: 'Chat'),
-          ResidentBottomBarItem(icon: Icons.assignment_rounded,  label: 'Requests'),
-          ResidentBottomBarItem(icon: Icons.person_rounded,      label: 'Profile'),
+          ResidentBottomBarItem(
+            icon: Icons.assignment_rounded,
+            label: 'Requests',
+          ),
+          ResidentBottomBarItem(icon: Icons.person_rounded, label: 'Profile'),
         ],
       ),
     );

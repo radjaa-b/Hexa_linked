@@ -129,18 +129,10 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
             const SliverToBoxAdapter(
               child: _SectionHeader(title: 'Your Day at a Glance'),
             ),
-            SliverToBoxAdapter(
-              child: GlanceCard(items: _glanceItems),
-            ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 20),
-            ),
-            const SliverToBoxAdapter(
-              child: ConsumptionPreviewCard(),
-            ),
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 120),
-            ),
+            SliverToBoxAdapter(child: GlanceCard(items: _glanceItems)),
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            const SliverToBoxAdapter(child: ConsumptionPreviewCard()),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),
       ),
@@ -321,7 +313,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  
+
                   const Text(
                     'Your home is secure\n& climate-controlled.',
                     style: TextStyle(
@@ -332,7 +324,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Wrap(
                     spacing: 10,
                     runSpacing: 8,
@@ -361,12 +353,14 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                color: const Color(0xFF152E22), // same as status card
-                    borderRadius: BorderRadius.circular(16),
-            ),
+                  color: const Color(0xFF152E22), // same as status card
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Row(
                   children: [
                     Icon(
@@ -452,11 +446,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
 //  SECTION HEADER
 // ─────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    this.actionLabel,
-    this.onAction,
-  });
+  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
 
   final String title;
   final String? actionLabel;
@@ -495,8 +485,10 @@ class _SectionHeader extends StatelessWidget {
             GestureDetector(
               onTap: onAction,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1C3B2E),
                   borderRadius: BorderRadius.circular(20),
@@ -581,10 +573,7 @@ class _AddAnnouncementSheetState extends State<_AddAnnouncementSheet> {
           const SizedBox(height: 4),
           const Text(
             'Share something with all residents',
-            style: TextStyle(
-              color: Color(0xFF9A9A9A),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Color(0xFF9A9A9A), fontSize: 13),
           ),
           const SizedBox(height: 20),
           Container(
