@@ -130,29 +130,49 @@ const Communication = () => {
   );
 
   useEffect(() => {
-    loadContactRequests();
-  }, []);
+  loadContactRequests(); // first load
 
-  const loadContactRequests = async () => {
-    try {
+  const interval = setInterval(() => {
+    loadContactRequests(true); // silent refresh
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
+
+  const loadContactRequests = async (silent = false) => {
+  try {
+    if (!silent) {
       setLoadingMessages(true);
-      setMessagesError("");
+    }
 
-      const data = await getContactRequests();
+    setMessagesError("");
 
-      const normalized = Array.isArray(data)
-        ? data.map(mapContactRequestSummary)
-        : [];
+    const data = await getContactRequests();
 
-      setMessages(normalized);
-      setSelected(null);
-    } catch (error) {
-      console.error("Failed to load contact requests:", error);
-      setMessagesError("Failed to load contact requests.");
-    } finally {
+    const normalized = Array.isArray(data)
+      ? data.map(mapContactRequestSummary)
+      : [];
+
+    setMessages(normalized);
+  } catch (error) {
+    console.error("Failed to load contact requests:", error);
+    setMessagesError("Failed to load contact requests.");
+  } finally {
+    if (!silent) {
       setLoadingMessages(false);
     }
-  };
+  }
+};
+
+useEffect(() => {
+  loadContactRequests(); // first load
+
+  const interval = setInterval(() => {
+    loadContactRequests(true); // silent refresh
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
 
   // ── Announcement handlers ──
   const handleAnnChange = (e) => {
@@ -545,26 +565,24 @@ const Communication = () => {
                     </div>
                   </div>
 
-                  {selected.status !== "resolved" ? (
-                    <div className="msg-reply-box">
-                      <div
-                        className="msg-reply-actions"
-                        style={{ justifyContent: "flex-end" }}
-                      >
-                        <button
-                          className="msg-resolve-btn"
-                          onClick={handleResolve}
-                          disabled={updatingStatus}
-                        >
-                          {updatingStatus ? "Updating..." : "Mark as resolved"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="msg-resolved-banner">
-                      This request has been resolved
-                    </div>
-                  )}
+                  <div className="msg-reply-box">
+  <div
+    className="msg-reply-actions"
+    style={{ justifyContent: "flex-end" }}
+  >
+    <button
+      className="msg-resolve-btn"
+      onClick={handleResolve}
+      disabled={selected.status === "resolved" || updatingStatus}
+    >
+      {selected.status === "resolved"
+        ? "Already resolved"
+        : updatingStatus
+        ? "Updating..."
+        : "Mark as resolved"}
+    </button>
+  </div>
+</div>
                 </>
               )}
             </div>
