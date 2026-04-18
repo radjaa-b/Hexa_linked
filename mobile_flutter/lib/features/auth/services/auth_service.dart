@@ -63,6 +63,8 @@ class AuthService {
     await _storage.delete(key: _tokenKey);
   }
 
+  static String get baseUrl => _baseUrl();
+
   static Future<bool> isLoggedIn() async {
     final session = await getStoredSession(requiredRole: residentRole);
     return session != null;

@@ -13,6 +13,7 @@ dependencies:
   image_picker: ^1.0.7
   cupertino_icons: ^1.0.8
   flutter_secure_storage: ^9.0.0
+  timeago: ^3.7.0
 
   # Bottom nav packages
   iconly: ^1.0.1
