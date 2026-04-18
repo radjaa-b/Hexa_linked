@@ -6,40 +6,12 @@ import {
   getContactRequestById,
   updateContactRequestStatus,
 } from "../../services/contactAdminService";
-
-// ============================================================
-// 1. ANNOUNCEMENTS (top section)
-//    still mock for now
-//
-// 2. CONTACT ADMIN REQUESTS (bottom section)
-//    GET    /admin/contact-requests
-//    GET    /admin/contact-requests/:id
-//    PATCH  /admin/contact-requests/:id   { status: "read" | "resolved" }
-// ============================================================
-
-const mockAnnouncements = [
-  {
-    id: "1",
-    title: "Pool maintenance",
-    body: "The pool will be closed for maintenance on April 2nd.",
-    pinned: true,
-    postedAt: "2026-03-28T10:00:00Z",
-  },
-  {
-    id: "2",
-    title: "Parking rules reminder",
-    body: "Please ensure your vehicle is parked in your designated spot only.",
-    pinned: false,
-    postedAt: "2026-03-26T09:00:00Z",
-  },
-  {
-    id: "3",
-    title: "Community meeting",
-    body: "Monthly community meeting on April 5th at 6PM in the main hall.",
-    pinned: false,
-    postedAt: "2026-03-24T14:00:00Z",
-  },
-];
+import {
+  getAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from "../../services/announcementService";
 
 const urgencyStyles = {
   urgent: { bg: "#fdf0f0", color: "#e74c3c", label: "Urgent" },
@@ -73,7 +45,6 @@ const getInitials = (name) =>
 
 const emptyAnn = { title: "", body: "", pinned: false };
 
-// Summary mapper for GET /admin/contact-requests
 const mapContactRequestSummary = (item) => ({
   id: String(item.id),
   resident: {
@@ -90,7 +61,6 @@ const mapContactRequestSummary = (item) => ({
   updatedAt: item.updated_at || "",
 });
 
-// Details mapper for GET /admin/contact-requests/:id
 const mapContactRequestDetails = (item) => ({
   id: String(item.id),
   resident: {
@@ -108,8 +78,36 @@ const mapContactRequestDetails = (item) => ({
 });
 
 const Communication = () => {
+  const storedUserRaw = localStorage.getItem("user");
+
+  let storedUser = null;
+  try {
+    storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+  } catch (error) {
+    console.error("Failed to parse stored user:", error);
+  }
+
+  const currentUserId =
+    localStorage.getItem("user_id") ||
+    localStorage.getItem("id") ||
+    storedUser?.id ||
+    "";
+
+  const currentUserRole =
+    localStorage.getItem("role") ||
+    localStorage.getItem("user_role") ||
+    storedUser?.role ||
+    "";
+
+  console.log("current user debug:", {
+    currentUserId,
+    currentUserRole,
+    storedUser,
+  });
+
   // ── Announcements state ──
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
   const [annForm, setAnnForm] = useState(emptyAnn);
   const [editAnnId, setEditAnnId] = useState(null);
   const [annError, setAnnError] = useState("");
@@ -129,50 +127,73 @@ const Communication = () => {
     filter === "all" ? true : m.status === filter
   );
 
-  useEffect(() => {
-  loadContactRequests(); // first load
+  const loadAnnouncements = async () => {
+    try {
+      setLoadingAnnouncements(true);
 
-  const interval = setInterval(() => {
-    loadContactRequests(true); // silent refresh
-  }, 5000);
+      const data = await getAnnouncements();
 
-  return () => clearInterval(interval);
-}, []);
+      const normalized = Array.isArray(data)
+        ? data.map((item) => ({
+            id: String(item.id),
+            title: item.title,
+            body: item.content,
+            postedAt: item.created_at,
+            updatedAt: item.updated_at,
+            authorId: String(item.author_user_id),
+            authorName: item.author_username || "Unknown user",
+            authorRole: item.author_role || "",
+            pinned: false,
+          }))
+        : [];
+
+      setAnnouncements(normalized);
+    } catch (err) {
+      console.error("Failed to load announcements:", err);
+      setAnnError("Failed to load announcements.");
+    } finally {
+      setLoadingAnnouncements(false);
+    }
+  };
 
   const loadContactRequests = async (silent = false) => {
-  try {
-    if (!silent) {
-      setLoadingMessages(true);
+    try {
+      if (!silent) {
+        setLoadingMessages(true);
+      }
+
+      setMessagesError("");
+
+      const data = await getContactRequests();
+
+      const normalized = Array.isArray(data)
+        ? data.map(mapContactRequestSummary)
+        : [];
+
+      setMessages(normalized);
+    } catch (error) {
+      console.error("Failed to load contact requests:", error);
+      setMessagesError("Failed to load contact requests.");
+    } finally {
+      if (!silent) {
+        setLoadingMessages(false);
+      }
     }
+  };
 
-    setMessagesError("");
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
 
-    const data = await getContactRequests();
+  useEffect(() => {
+    loadContactRequests();
 
-    const normalized = Array.isArray(data)
-      ? data.map(mapContactRequestSummary)
-      : [];
+    const interval = setInterval(() => {
+      loadContactRequests(true);
+    }, 5000);
 
-    setMessages(normalized);
-  } catch (error) {
-    console.error("Failed to load contact requests:", error);
-    setMessagesError("Failed to load contact requests.");
-  } finally {
-    if (!silent) {
-      setLoadingMessages(false);
-    }
-  }
-};
-
-useEffect(() => {
-  loadContactRequests(); // first load
-
-  const interval = setInterval(() => {
-    loadContactRequests(true); // silent refresh
-  }, 5000);
-
-  return () => clearInterval(interval);
-}, []);
+    return () => clearInterval(interval);
+  }, []);
 
   // ── Announcement handlers ──
   const handleAnnChange = (e) => {
@@ -182,7 +203,7 @@ useEffect(() => {
     setAnnError("");
   };
 
-  const handleAnnSubmit = (e) => {
+  const handleAnnSubmit = async (e) => {
     e.preventDefault();
 
     if (!annForm.title.trim() || !annForm.body.trim()) {
@@ -190,33 +211,57 @@ useEffect(() => {
       return;
     }
 
-    if (editAnnId) {
-      setAnnouncements((prev) =>
-        prev.map((a) => (a.id === editAnnId ? { ...a, ...annForm } : a))
-      );
-      setEditAnnId(null);
-    } else {
-      const newAnn = {
-        id: String(Date.now()),
-        ...annForm,
-        postedAt: new Date().toISOString(),
-      };
-      setAnnouncements((prev) => [newAnn, ...prev]);
-    }
+    try {
+      if (editAnnId) {
+        await updateAnnouncement(editAnnId, {
+          title: annForm.title,
+          content: annForm.body,
+        });
+      } else {
+        await createAnnouncement({
+          title: annForm.title,
+          content: annForm.body,
+        });
+      }
 
-    setAnnForm(emptyAnn);
-    setShowAnnForm(false);
+      await loadAnnouncements();
+
+      setEditAnnId(null);
+      setAnnForm(emptyAnn);
+      setShowAnnForm(false);
+      setAnnError("");
+    } catch (err) {
+      console.error("Announcement error:", err);
+      setAnnError("Operation failed.");
+    }
   };
 
   const handleEditAnn = (ann) => {
     setEditAnnId(ann.id);
-    setAnnForm({ title: ann.title, body: ann.body, pinned: ann.pinned });
+    setAnnForm({
+      title: ann.title,
+      body: ann.body,
+      pinned: ann.pinned,
+    });
     setShowAnnForm(true);
     setAnnError("");
   };
 
-  const handleDeleteAnn = (id) => {
-    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+  const handleDeleteAnn = async (id) => {
+    try {
+      await deleteAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+
+      if (editAnnId === id) {
+        setEditAnnId(null);
+        setAnnForm(emptyAnn);
+        setShowAnnForm(false);
+        setAnnError("");
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+      setAnnError("Delete failed.");
+    }
   };
 
   const handleCancelAnn = () => {
@@ -377,58 +422,76 @@ useEffect(() => {
           )}
 
           <div className="ann-list">
-            {announcements.length === 0 ? (
+            {loadingAnnouncements ? (
+              <div className="ann-empty">Loading announcements...</div>
+            ) : announcements.length === 0 ? (
               <div className="ann-empty">No announcements yet</div>
             ) : (
-              announcements.map((ann) => (
-                <div
-                  key={ann.id}
-                  className={`ann-card ${ann.pinned ? "pinned" : ""}`}
-                >
-                  <div className="ann-card-top">
-                    {ann.pinned && <span className="ann-pin-badge">Pinned</span>}
-                    <div className="ann-card-actions">
-                      <button
-                        className="ann-icon-btn"
-                        onClick={() => handleEditAnn(ann)}
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button
-                        className="ann-icon-btn delete"
-                        onClick={() => handleDeleteAnn(ann.id)}
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14H6L5 6" />
-                          <path d="M10 11v6M14 11v6" />
-                          <path d="M9 6V4h6v2" />
-                        </svg>
-                      </button>
+              announcements.map((ann) => {
+                const canManageAnnouncement =
+                  currentUserRole === "admin" || currentUserId == ann.authorId;
+
+                return (
+                  <div
+                    key={ann.id}
+                    className={`ann-card ${ann.pinned ? "pinned" : ""}`}
+                  >
+                    <div className="ann-card-top">
+                      {ann.pinned && (
+                        <span className="ann-pin-badge">Pinned</span>
+                      )}
+
+                      {canManageAnnouncement && (
+                        <div className="ann-card-actions">
+                          <button
+                            type="button"
+                            className="ann-icon-btn"
+                            onClick={() => handleEditAnn(ann)}
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="ann-icon-btn delete"
+                            onClick={() => handleDeleteAnn(ann.id)}
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4h6v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ann-card-title">{ann.title}</div>
+                    <div className="ann-card-body">{ann.body}</div>
+                    <div className="ann-card-time">
+                      {ann.authorName} · {formatTime(ann.postedAt)}
                     </div>
                   </div>
-                  <div className="ann-card-title">{ann.title}</div>
-                  <div className="ann-card-body">{ann.body}</div>
-                  <div className="ann-card-time">{formatTime(ann.postedAt)}</div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -461,9 +524,9 @@ useEffect(() => {
                 filtered.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`msg-item ${selected?.id === msg.id ? "active" : ""} ${
-                      msg.status === "pending" ? "unread" : ""
-                    }`}
+                    className={`msg-item ${
+                      selected?.id === msg.id ? "active" : ""
+                    } ${msg.status === "pending" ? "unread" : ""}`}
                     onClick={() => handleSelect(msg)}
                   >
                     <div className="msg-item-top">
@@ -566,23 +629,25 @@ useEffect(() => {
                   </div>
 
                   <div className="msg-reply-box">
-  <div
-    className="msg-reply-actions"
-    style={{ justifyContent: "flex-end" }}
-  >
-    <button
-      className="msg-resolve-btn"
-      onClick={handleResolve}
-      disabled={selected.status === "resolved" || updatingStatus}
-    >
-      {selected.status === "resolved"
-        ? "Already resolved"
-        : updatingStatus
-        ? "Updating..."
-        : "Mark as resolved"}
-    </button>
-  </div>
-</div>
+                    <div
+                      className="msg-reply-actions"
+                      style={{ justifyContent: "flex-end" }}
+                    >
+                      <button
+                        className="msg-resolve-btn"
+                        onClick={handleResolve}
+                        disabled={
+                          selected.status === "resolved" || updatingStatus
+                        }
+                      >
+                        {selected.status === "resolved"
+                          ? "Already resolved"
+                          : updatingStatus
+                          ? "Updating..."
+                          : "Mark as resolved"}
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
