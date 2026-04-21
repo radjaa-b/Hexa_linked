@@ -22,7 +22,8 @@
 // missing, expired, or invalid.
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL;
+console.log("🔍 BASE_URL is:", BASE_URL);
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

@@ -8,18 +8,14 @@ import axiosInstance from "./axiosInstance";
 
 // GET /technician/maintenance?status=pending|in_progress|completed
 export const getMaintenanceRequests = async (status = "all") => {
-  const response = await axiosInstance.get("/technician/maintenance", {
-    params: { status },
-  });
+  const params = status !== "all" ? { status } : {};
+  const response = await axiosInstance.get("/maintenance", { params });
   return response.data;
 };
 
-// PATCH /technician/maintenance/:id/status
-// body: { status: "in_progress"|"completed", note: string }
-// Radja: after update, send push notification to resident mobile app
 export const updateMaintenanceStatus = async (id, status, note) => {
   const response = await axiosInstance.patch(
-    `/technician/maintenance/${id}/status`,
+    `/maintenance/${id}/status`,
     { status, note }
   );
   return response.data;

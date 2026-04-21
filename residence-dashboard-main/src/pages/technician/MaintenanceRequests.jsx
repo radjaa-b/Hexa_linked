@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getMaintenanceRequests, updateMaintenanceStatus } from "../../api/maintenance.api";
+
 import PageWrapper from "../../components/layout/PageWrapper";
 import "./MaintenanceRequests.css";
 import useAuth from "../../hooks/useAuth";
@@ -9,37 +11,8 @@ const getGreeting = () => {
   if (h < 18) return "afternoon";
   return "evening";
 };
-// ============================================================
-// Radja: this page uses:
-//   GET   /technician/maintenance?status=pending|in_progress|completed
-//   PATCH /technician/maintenance/:id/status
-//         body: { status: "in_progress"|"completed", note: string }
-//
-// After status update → send push notification to resident mobile app
-//
-// Expected shape:
-// {
-//   id: "uuid",
-//   title: "string",
-//   description: "string",
-//   category: "electrical"|"plumbing"|"general"|"other",
-//   priority: "low"|"medium"|"high",
-//   status: "pending"|"in_progress"|"completed",
-//   submittedBy: { id, name, unit },
-//   submittedAt: "timestamp",
-//   photos: ["url1", "url2"],
-//   notes: "string or null"
-// }
-// ============================================================
 
-const mockRequests = [
-  { id: "1", title: "Broken hallway light",   description: "The light in the hallway near unit A-13 has been broken for 3 days. It is very dark at night and residents are complaining.", category: "electrical", priority: "medium", status: "pending",     submittedBy: { name: "Ahmed Benali",  unit: "A-12" }, submittedAt: "2026-03-29T08:00:00Z", notes: null },
-  { id: "2", title: "Water leak under sink",   description: "There is a water leak under the kitchen sink in my unit. Water is dripping constantly and causing damage to the cabinet below.", category: "plumbing",   priority: "high",   status: "pending",     submittedBy: { name: "Karima Ouali",  unit: "B-04" }, submittedAt: "2026-03-29T09:30:00Z", notes: null },
-  { id: "3", title: "Door lock malfunction",   description: "The main door lock is not working properly. It sometimes gets stuck and I cannot enter my unit without struggling for several minutes.", category: "general",    priority: "high",   status: "in_progress", submittedBy: { name: "Sara Bensaid",  unit: "A-03" }, submittedAt: "2026-03-28T14:00:00Z", notes: "Ordered replacement lock, will install tomorrow." },
-  { id: "4", title: "Elevator strange noise",  description: "The elevator in building C is making a loud grinding noise every time it moves. It feels unsafe to use.", category: "general",    priority: "high",   status: "in_progress", submittedBy: { name: "Youcef Amrani", unit: "C-07" }, submittedAt: "2026-03-28T10:00:00Z", notes: "Technician inspected — cable tension adjustment needed." },
-  { id: "5", title: "AC not cooling",          description: "The air conditioning unit in the living room stopped working. It turns on but does not cool the room at all.", category: "electrical", priority: "medium", status: "pending",     submittedBy: { name: "Mourad Kaci",   unit: "B-09" }, submittedAt: "2026-03-27T16:00:00Z", notes: null },
-  { id: "6", title: "Broken window handle",    description: "The handle on the bedroom window is broken and the window cannot be closed properly.", category: "general",    priority: "low",    status: "completed",   submittedBy: { name: "Ahmed Benali",  unit: "A-12" }, submittedAt: "2026-03-26T11:00:00Z", notes: "Replaced window handle. Resident confirmed fixed." },
-];
+
 
 // Category badges — dark adapted
 const categoryConfig = {
@@ -72,7 +45,9 @@ const getInitials = (name) =>
 
 const MaintenanceRequests = () => {
   const { user } = useAuth();
-  const [requests,   setRequests]   = useState(mockRequests);
+  const [requests,   setRequests]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
   const [filter,     setFilter]     = useState("all");
   const [actionId,   setActionId]   = useState(null);
   const [note,       setNote]       = useState("");
@@ -83,6 +58,27 @@ const MaintenanceRequests = () => {
   const inProgressCount = requests.filter((r) => r.status === "in_progress").length;
   const completedCount  = requests.filter((r) => r.status === "completed").length;
   const highCount       = requests.filter((r) => r.priority === "high" && r.status !== "completed").length;
+  useEffect(() => {
+  const load = async () => {
+    try {
+      const data = await getMaintenanceRequests();
+      // map only the field name differences
+      setRequests(data.map(r => ({
+  ...r,
+  id:          r.id,          // already a number, keep it
+  title: r.title ?? r.maintenance_type,
+  submittedBy: { name: r.resident_username ?? "Resident", unit: r.unit_number },
+  submittedAt: r.created_at,
+})));
+
+    } catch (err) {
+      setError("Failed to load maintenance requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, []);
 
   const filtered = requests.filter((r) =>
     filter === "all" ? true : r.status === filter
@@ -94,23 +90,28 @@ const MaintenanceRequests = () => {
     setNoteError("");
   };
 
-  const handleStatusUpdate = (newStatus) => {
-    if (!note.trim()) {
-      setNoteError("Please add a note before updating.");
-      return;
-    }
-    setProcessing(true);
-    // Radja: PATCH /technician/maintenance/:id/status { status: newStatus, note }
-    // After update → send push notification to resident mobile app
+  const handleStatusUpdate = async (newStatus) => {
+  if (!note.trim()) {
+    setNoteError("Please add a note before updating.");
+    return;
+  }
+  setProcessing(true);
+  try {
+    await updateMaintenanceStatus(Number(actionId), newStatus, note);
     setRequests((prev) =>
       prev.map((r) =>
-        r.id === actionId ? { ...r, status: newStatus, notes: note } : r
-      )
+  r.id === Number(actionId) ? { ...r, status: newStatus, notes: note } : r
+)
     );
     setActionId(null);
     setNote("");
+  } catch (err) {
+    setNoteError("Failed to update status. Please try again.");
+  } finally {
     setProcessing(false);
-  };
+  }
+};
+
 
   return (
     <PageWrapper>
@@ -164,7 +165,10 @@ const MaintenanceRequests = () => {
   </div>
 </div>
 
+
         {/* ── Filters ── */}
+        {loading && <div className="maint-empty">Loading requests...</div>}
+        {error   && <div className="maint-empty" style={{ color: "#f08080" }}>{error}</div>}
         <div className="maint-filters">
           {["all", "pending", "in_progress", "completed"].map((f) => (
             <button
