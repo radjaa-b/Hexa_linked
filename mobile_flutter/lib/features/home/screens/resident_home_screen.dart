@@ -10,30 +10,8 @@ import 'package:resident_app/features/home/widgets/announcement_card.dart';
 import 'package:resident_app/features/home/widgets/glance_item_card.dart';
 import 'package:resident_app/features/pass/screens/resident_pass_screen.dart';
 import 'package:resident_app/services/weather_service.dart';
-
-final _glanceItems = [
-  const GlanceItemModel(
-    icon: Icons.event_available_rounded,
-    iconColor: Color(0xFF2A7F62),
-    label: 'Next Booking',
-    value: 'Gym - 6:00 PM',
-    tag: 'Today',
-  ),
-  const GlanceItemModel(
-    icon: Icons.assignment_turned_in_rounded,
-    iconColor: Color(0xFFB8974A),
-    label: 'Pending Request',
-    value: 'Maintenance - Unit 3A',
-    tag: 'In Review',
-  ),
-  const GlanceItemModel(
-    icon: Icons.person_pin_circle_rounded,
-    iconColor: Color(0xFF5B7FA6),
-    label: 'Next Visitor',
-    value: 'Kami benamouna. - 3:00 PM',
-    tag: 'Approved',
-  ),
-];
+import 'package:resident_app/features/requests/services/requests_service.dart';
+import 'package:resident_app/features/requests/models/maintenance_request.dart';
 
 class ResidentHomeScreen extends StatefulWidget {
   const ResidentHomeScreen({super.key});
@@ -63,11 +41,14 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
   String? _announcementsError;
   String? _currentUserId;
   String? _currentUserRole;
+  MaintenanceRequest? _latestRequest;
+  bool _loadingRequest = true;
 
   @override
   void initState() {
     super.initState();
     _initializeAnnouncements();
+    _loadLatestRequest();
   }
 
   @override
@@ -128,6 +109,33 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
           _refreshingAnnouncements = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadLatestRequest() async {
+    try {
+      final session = await AuthService.getStoredSession(
+        requiredRole: 'resident',
+      );
+      if (session == null) return;
+
+      final requests = await RequestsService().getMaintenanceRequests(
+        token: session.accessToken,
+      );
+
+      final active = requests
+          .where((r) => r.status == 'pending' || r.status == 'in_progress')
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _latestRequest = active.isNotEmpty ? active.first : null;
+        });
+      }
+    } catch (_) {
+      // fail silently
+    } finally {
+      if (mounted) setState(() => _loadingRequest = false);
     }
   }
 
@@ -368,7 +376,45 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
               const SliverToBoxAdapter(
                 child: _SectionHeader(title: 'Your Day at a Glance'),
               ),
-              SliverToBoxAdapter(child: GlanceCard(items: _glanceItems)),
+              SliverToBoxAdapter(
+                child: GlanceCard(
+                  items: [
+                    const GlanceItemModel(
+                      icon: Icons.event_available_rounded,
+                      iconColor: Color(0xFF2A7F62),
+                      label: 'Next Booking',
+                      value: 'Gym - 6:00 PM',
+                      tag: 'Today',
+                    ),
+                    if (_latestRequest != null)
+                      GlanceItemModel(
+                        icon: Icons.assignment_turned_in_rounded,
+                        iconColor: const Color(0xFFB8974A),
+                        label: 'Pending Request',
+                        value:
+                            '${_latestRequest!.category} - Unit ${_latestRequest!.unitNumber}',
+                        tag: _latestRequest!.status == 'in_progress'
+                            ? 'In Progress'
+                            : 'In Review',
+                      )
+                    else if (!_loadingRequest)
+                      const GlanceItemModel(
+                        icon: Icons.assignment_turned_in_rounded,
+                        iconColor: Color(0xFFB8974A),
+                        label: 'Maintenance',
+                        value: 'No active requests',
+                        tag: 'All clear',
+                      ),
+                    const GlanceItemModel(
+                      icon: Icons.person_pin_circle_rounded,
+                      iconColor: Color(0xFF5B7FA6),
+                      label: 'Next Visitor',
+                      value: 'Kami benamouna. - 3:00 PM',
+                      tag: 'Approved',
+                    ),
+                  ],
+                ),
+              ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
               const SliverToBoxAdapter(child: ConsumptionPreviewCard()),
               const SliverToBoxAdapter(child: SizedBox(height: 120)),

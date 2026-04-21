@@ -5,6 +5,9 @@ import 'maintenance_screen.dart';
 import 'visitor_screen.dart';
 import 'booking_screen.dart';
 import 'parking_screen.dart';
+import 'package:resident_app/features/auth/services/auth_service.dart';
+import '../services/requests_service.dart';
+import '../models/maintenance_request.dart';
 
 class RequestsHubScreen extends StatelessWidget {
   const RequestsHubScreen({super.key});
@@ -166,15 +169,51 @@ class RequestsHubScreen extends StatelessWidget {
   }
 }
 
-class _ActivityCard extends StatelessWidget {
+class _ActivityCard extends StatefulWidget {
   const _ActivityCard();
+
+  @override
+  State<_ActivityCard> createState() => _ActivityCardState();
+}
+
+class _ActivityCardState extends State<_ActivityCard> {
+  int _openRequests = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    try {
+      final session = await AuthService.getStoredSession(
+        requiredRole: 'resident',
+      );
+      if (session == null) return;
+
+      final requests = await RequestsService().getMaintenanceRequests(
+        token: session.accessToken,
+      );
+
+      final open = requests
+          .where((r) => r.status == 'pending' || r.status == 'in_progress')
+          .length;
+
+      if (mounted) setState(() => _openRequests = open);
+    } catch (_) {
+      // fail silently — keep showing 0
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     const int bookings = 2;
     const int bookingsMax = 5;
-    const int requests = 1;
-    const int requestsMax = 4;
+    const int requestsMax = 10;
     const int visitors = 3;
     const int visitorsMax = 6;
 
@@ -184,30 +223,38 @@ class _ActivityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.gold.withOpacity(0.15),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.gold.withOpacity(0.15), width: 1),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          _ActivityStatRow(
+          const _ActivityStatRow(
             icon: Icons.calendar_month_rounded,
             label: 'Active Bookings',
             value: bookings,
             max: bookingsMax,
             color: AppColors.gold,
           ),
-          SizedBox(height: 18),
-          _ActivityStatRow(
-            icon: Icons.assignment_outlined,
-            label: 'Open Requests',
-            value: requests,
-            max: requestsMax,
-            color: Color(0xFF5B9BD5),
-          ),
-          SizedBox(height: 18),
-          _ActivityStatRow(
+          const SizedBox(height: 18),
+          _loading
+              ? const SizedBox(
+                  height: 42,
+                  child: Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                )
+              : _ActivityStatRow(
+                  icon: Icons.assignment_outlined,
+                  label: 'Open Requests',
+                  value: _openRequests,
+                  max: requestsMax,
+                  color: const Color(0xFF5B9BD5),
+                ),
+          const SizedBox(height: 18),
+          const _ActivityStatRow(
             icon: Icons.people_outline_rounded,
             label: 'Visitor Passes',
             value: visitors,

@@ -5,83 +5,25 @@ import '../models/visitor_request.dart';
 import '../models/booking_request.dart';
 import '../models/parking_spot.dart';
 
-// ═══════════════════════════════════════════════════════════════
 //   HEY RADJA  zwina  rabi m3ak   — READ THIS FIRST
-//
-//  This file is the only place you need to touch to connect the
-//  backend. Every API call in the app goes through here.
-//
-//  STEP 1 — Replace the base URL below with your real server URL.
-//  STEP 2 — Check each method's expected request body (toJson)
-//            and expected response shape (fromJson) in the models/
-//            folder. The field names must match your API exactly.
-//  STEP 3 — If your API uses auth tokens, pass the token into
-//            each method. The _headers() helper already handles
-//            the Authorization header for you.
-//
-//  That's it. The screens handle loading states and error display
-//  automatically — you don't need to touch any UI file.
-// ═══════════════════════════════════════════════════════════════
 
 class RequestsService {
+  static const String _baseUrl = 'http://192.168.1.4:8000';
 
-  // ── RADJA: Replace this with your real API base URL ─────────
-  //    e.g. 'https://resident-app.example.com/api'
-  //    or   'http://192.168.1.10:8000/api'  (local dev)
-  static const String _baseUrl = 'https://your-api.com/api';
+  static const bool _useMock = false;
 
-  // ── Mock toggle ───────────────────────────────────────────────
-  //    RADJA: flip this to false when the backend is ready
-  static const bool _useMock = true;
-
-  // ── Auth header helper ────────────────────────────────────────
-  //    RADJA: If your API uses Bearer tokens, pass the token when
-  //    calling any method below. If you use a different auth
-  //    scheme (cookies, API keys, etc.), update this method.
   Map<String, String> _headers({String? token}) => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
-
-  // ═══════════════════════════════════════════════════════════════
-  //  MAINTENANCE REQUESTS
-  //
-  //  POST   /maintenance-requests       → submit a new request
-  //  GET    /maintenance-requests       → list requests
-  //                                       (optional: ?unit_number=A-204)
-  // ═══════════════════════════════════════════════════════════════
-
-  // RADJA: Called when the resident submits the maintenance form.
-  //
-  // Expected request body (JSON):
-  // {
-  //   "unit_number":    "A-204",
-  //   "category":       "Plumbing",
-  //   "description":    "Leaking pipe under the sink",
-  //   "priority":       "high",          // "low" | "medium" | "high"
-  //   "preferred_date": "2025-06-01T00:00:00.000", // nullable
-  //   "status":         "pending"
-  // }
-  //
-  // Expected response body (JSON) — the created record:
-  // {
-  //   "id":             "123",
-  //   "unit_number":    "A-204",
-  //   "category":       "Plumbing",
-  //   "description":    "Leaking pipe under the sink",
-  //   "priority":       "high",
-  //   "preferred_date": "2025-06-01T00:00:00.000",
-  //   "status":         "pending",
-  //   "created_at":     "2025-05-28T10:30:00.000"
-  // }
   Future<MaintenanceRequest> submitMaintenanceRequest({
     required MaintenanceRequest request,
-    String? token,
+    required String token, // make token required
   }) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/maintenance-requests'),
+      Uri.parse('$_baseUrl/maintenance'), // ✅ correct
       headers: _headers(token: token),
       body: jsonEncode(request.toJson()),
     );
@@ -91,28 +33,19 @@ class RequestsService {
     throw Exception('Failed to submit maintenance request: ${response.body}');
   }
 
-  // RADJA: Called to list all maintenance requests for a unit.
-  //
-  // Expected response body (JSON) — array of records:
-  // [
-  //   { "id": "123", "unit_number": "A-204", "status": "pending", ... },
-  //   { "id": "124", "unit_number": "A-204", "status": "in_progress", ... }
-  // ]
   Future<List<MaintenanceRequest>> getMaintenanceRequests({
-    String? token,
-    String? unitNumber,
+    required String token, // make token required
   }) async {
-    final uri = Uri.parse('$_baseUrl/maintenance-requests').replace(
-      queryParameters: {if (unitNumber != null) 'unit_number': unitNumber},
+    final response = await http.get(
+      Uri.parse('$_baseUrl/maintenance/me'), // ✅ resident sees only their own
+      headers: _headers(token: token),
     );
-    final response = await http.get(uri, headers: _headers(token: token));
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => MaintenanceRequest.fromJson(e)).toList();
     }
     throw Exception('Failed to fetch maintenance requests: ${response.body}');
   }
-
 
   // ═══════════════════════════════════════════════════════════════
   //  VISITOR REQUESTS
@@ -177,7 +110,6 @@ class RequestsService {
     }
     throw Exception('Failed to fetch visitor requests: ${response.body}');
   }
-
 
   // ═══════════════════════════════════════════════════════════════
   //  BOOKING REQUESTS
@@ -247,7 +179,6 @@ class RequestsService {
     throw Exception('Failed to fetch booking requests: ${response.body}');
   }
 
-
   // ═══════════════════════════════════════════════════════════════
   //  PARKING
   //
@@ -305,28 +236,48 @@ class RequestsService {
     // RADJA: each spot has a residentId assigned by the backend
     // 'mock-resident-01' is the logged in resident (spot A-03)
     final rowAResidents = [
-      'res-01', 'res-02', 'mock-resident-01', 'res-04', 'res-05',
-      'res-06', 'res-07', 'res-08', 'res-09', 'res-10',
-      'res-11', 'res-12', 'res-13', 'res-14', 'res-15',
-      'res-16', 'res-17', 'res-18', 'res-19', 'res-20',
+      'res-01',
+      'res-02',
+      'mock-resident-01',
+      'res-04',
+      'res-05',
+      'res-06',
+      'res-07',
+      'res-08',
+      'res-09',
+      'res-10',
+      'res-11',
+      'res-12',
+      'res-13',
+      'res-14',
+      'res-15',
+      'res-16',
+      'res-17',
+      'res-18',
+      'res-19',
+      'res-20',
     ];
     for (int i = 0; i < 20; i++) {
-      spots.add(ParkingSpot(
-        spotId:        'A-${(i + 1).toString().padLeft(2, '0')}',
-        status:        SpotStatus.occupied,   // resident spots are always occupied
-        residentId:    rowAResidents[i],
-        isVisitorSpot: false,
-      ));
+      spots.add(
+        ParkingSpot(
+          spotId: 'A-${(i + 1).toString().padLeft(2, '0')}',
+          status: SpotStatus.occupied, // resident spots are always occupied
+          residentId: rowAResidents[i],
+          isVisitorSpot: false,
+        ),
+      );
     }
 
     // ── Row B — resident spots ─────────────────────────────────
     for (int i = 0; i < 20; i++) {
-      spots.add(ParkingSpot(
-        spotId:        'B-${(i + 1).toString().padLeft(2, '0')}',
-        status:        SpotStatus.occupied,
-        residentId:    'res-${i + 21}',
-        isVisitorSpot: false,
-      ));
+      spots.add(
+        ParkingSpot(
+          spotId: 'B-${(i + 1).toString().padLeft(2, '0')}',
+          status: SpotStatus.occupied,
+          residentId: 'res-${i + 21}',
+          isVisitorSpot: false,
+        ),
+      );
     }
 
     // ── Row V — visitor spots ──────────────────────────────────
@@ -344,12 +295,14 @@ class RequestsService {
       SpotStatus.available,
     ];
     for (int i = 0; i < 10; i++) {
-      spots.add(ParkingSpot(
-        spotId:        'V-${(i + 1).toString().padLeft(2, '0')}',
-        status:        visitorStatuses[i],
-        residentId:    null,
-        isVisitorSpot: true,
-      ));
+      spots.add(
+        ParkingSpot(
+          spotId: 'V-${(i + 1).toString().padLeft(2, '0')}',
+          status: visitorStatuses[i],
+          residentId: null,
+          isVisitorSpot: true,
+        ),
+      );
     }
 
     return spots;

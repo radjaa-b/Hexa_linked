@@ -41,7 +41,7 @@ class AuthService {
 
   // Temporary runtime anchor to stop stale .env madness.
   // Change this later only when your backend IP changes.
-  static const String _fixedBaseUrl = 'http://192.168.1.13:8000';
+  static const String _fixedBaseUrl = 'http://192.168.1.4:8000';
 
   static const bool _useMock = false;
   static const _mockEmail = 'test@test.com';
