@@ -1,4 +1,4 @@
-import axiosInstance from "./axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 
 export const getContactRequests = async () => {
   const response = await axiosInstance.get("/admin/contact-requests");

@@ -1,38 +1,27 @@
 import axiosInstance from "./axiosInstance";
 
-// ============================================================
-// Radja: all staff-related API calls are here.
-// Staff = security agents + technicians.
-// Admin creates all accounts — no self-registration.
-// ============================================================
-
-// GET /admin/staff
-export const getStaff = async () => {
-  const response = await axiosInstance.get("/admin/staff");
+export const getAllUsers = async () => {
+  const response = await axiosInstance.get("/admin/users");
   return response.data;
 };
 
-// POST /admin/staff
-// Radja: after creating, backend auto-generates password
-// and sends it to the staff member via SMS or email.
-// body: { name, role: "security"|"technician", phone, email }
-export const createStaff = async (data) => {
-  const response = await axiosInstance.post("/admin/staff", data);
+export const createStaff = async ({ email, full_name, role }) => {
+  const response = await axiosInstance.post("/auth/admin/create-user", {
+    email,
+    full_name,
+    role,
+  });
   return response.data;
 };
 
-// PUT /admin/staff/:id
 export const updateStaff = async (id, data) => {
-  const response = await axiosInstance.put(`/admin/staff/${id}`, data);
+  const response = await axiosInstance.patch(`/admin/users/${id}`, data);
   return response.data;
 };
 
-// PATCH /admin/staff/:id/status
-// body: { status: "active" | "inactive" }
-export const updateStaffStatus = async (id, status) => {
-  const response = await axiosInstance.patch(
-    `/admin/staff/${id}/status`,
-    { status }
-  );
+export const updateStaffStatus = async (id, is_active) => {
+  const response = await axiosInstance.patch(`/admin/users/${id}`, {
+    is_active,
+  });
   return response.data;
 };

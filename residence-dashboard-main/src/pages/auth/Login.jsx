@@ -8,6 +8,7 @@ import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
+ 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,10 +45,10 @@ const Login = () => {
 
       if (!payload) {
         setError("Failed to decode authentication token.");
-        return;
-      }
-
+      return;
+}
       const role = payload.role;
+      console.log("ROLE FROM TOKEN:", role);
       const user = {
         id: payload.sub,
         email,

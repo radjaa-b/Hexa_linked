@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import PageWrapper from "../../components/layout/PageWrapper";
 import "./Dashboard.css";
 import useAuth from "../../hooks/useAuth";
-import { getMaintenanceRequests } from "../../services/maintenanceService";
-
-// ============================================================
-// Dashboard
-// - keeps current mock data for stats/access/alerts/visitors/consumption
-// - maintenance card is now connected to real backend
-// ============================================================
+import {
+  getMaintenanceRequests,
+  getMaintenanceRequestById,
+  updateMaintenanceStatus,
+  assignTechnicianToMaintenance,
+} from "../../services/maintenanceService";
 
 const mockStats = {
   totalResidents: 120,
@@ -43,7 +41,7 @@ const mockConsumption = {
 const statusStyles = {
   pending: { bg: "#E6F1FB", color: "#185FA5", label: "Pending" },
   in_progress: { bg: "#fdf0e0", color: "#e67e22", label: "In progress" },
-  resolved: { bg: "#edfaf5", color: "#0F6E56", label: "Resolved" },
+  completed: { bg: "#edfaf5", color: "#0F6E56", label: "Completed" },
 };
 
 const today = new Date().toLocaleDateString("en-GB", {
@@ -76,48 +74,147 @@ const formatPreferredDate = (value) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
-  const [stats, setStats] = useState(mockStats);
-  const [accessLog, setAccessLog] = useState(mockAccessLog);
+  const [stats] = useState(mockStats);
+  const [accessLog] = useState(mockAccessLog);
   const [maintenance, setMaintenance] = useState([]);
-  const [alerts, setAlerts] = useState(mockAlerts);
-  const [visitors, setVisitors] = useState(mockVisitors);
-  const [consumption, setConsumption] = useState(mockConsumption);
+  const [alerts] = useState(mockAlerts);
+  const [visitors] = useState(mockVisitors);
+  const [consumption] = useState(mockConsumption);
+
   const [loadingMaintenance, setLoadingMaintenance] = useState(true);
 
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [loadingRequestDetails, setLoadingRequestDetails] = useState(false);
+
+  const [statusValue, setStatusValue] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
+
+  const loadMaintenance = async () => {
+    try {
+      setLoadingMaintenance(true);
+
+      const data = await getMaintenanceRequests();
+      console.log("MAINTENANCE RAW DATA:", data);
+
+      const normalized = Array.isArray(data)
+        ? data
+            .filter((item) => item.status !== "completed")
+            .slice(0, 3)
+            .map((item) => ({
+              id: item.id,
+              title: item.maintenance_type || `Request #${item.id}`,
+              category: item.maintenance_type || "General",
+              priority: item.status || "pending",
+              description: item.description || "",
+              unitNumber: item.unit_number || "-",
+              preferredDate: item.preferred_date || "",
+            }))
+        : [];
+
+      setMaintenance(normalized);
+    } catch (error) {
+      console.error("Failed to load maintenance requests:", error);
+      console.error("Backend response:", error?.response?.data);
+      setMaintenance([]);
+
+    } finally {
+      setLoadingMaintenance(false);
+    }
+  };
+
   useEffect(() => {
-    const loadMaintenance = async () => {
-      try {
-        setLoadingMaintenance(true);
-
-        const data = await getMaintenanceRequests();
-
-        const normalized = Array.isArray(data)
-          ? data
-              .filter((item) => item.status !== "resolved")
-              .slice(0, 3)
-              .map((item) => ({
-                id: item.id,
-                title: item.description || `Request #${item.id}`,
-                category: item.maintenance_type || "General",
-                priority: item.status || "pending",
-                unitNumber: item.unit_number || "-",
-                preferredDate: item.preferred_date || "",
-              }))
-          : [];
-
-        setMaintenance(normalized);
-      } catch (error) {
-        console.error("Failed to load maintenance requests:", error);
-        setMaintenance([]);
-      } finally {
-        setLoadingMaintenance(false);
-      }
-    };
-
     loadMaintenance();
   }, []);
+
+  const openMaintenanceDetails = async (id) => {
+    try {
+      setLoadingRequestDetails(true);
+      setActionError("");
+      setActionSuccess("");
+      setStatusValue("");
+      setTechnicianId("");
+
+      const data = await getMaintenanceRequestById(id);
+      setSelectedRequest(data);
+      setStatusValue(data.status || "");
+      setTechnicianId(data.assigned_technician_id ? String(data.assigned_technician_id) : "");
+    } catch (error) {
+      console.error("Failed to load maintenance request details:", error);
+      setActionError("Failed to load request details.");
+    } finally {
+      setLoadingRequestDetails(false);
+    }
+  };
+
+  const closeMaintenanceDetails = () => {
+    setSelectedRequest(null);
+    setActionError("");
+    setActionSuccess("");
+    setStatusValue("");
+    setTechnicianId("");
+  };
+
+  const handleAssignTechnician = async () => {
+    if (!selectedRequest || !technicianId.trim()) {
+      setActionError("Please enter a technician ID.");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setActionError("");
+      setActionSuccess("");
+
+      const updated = await assignTechnicianToMaintenance(
+        selectedRequest.id,
+        Number(technicianId)
+      );
+
+      setSelectedRequest(updated);
+      setActionSuccess("Technician assigned successfully.");
+      await loadMaintenance();
+    } catch (error) {
+      console.error("Failed to assign technician:", error);
+      setActionError(
+        error?.response?.data?.detail || "Failed to assign technician."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedRequest || !statusValue) {
+      setActionError("Please choose a status.");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setActionError("");
+      setActionSuccess("");
+
+      const updated = await updateMaintenanceStatus(
+        selectedRequest.id,
+        statusValue
+      );
+
+      setSelectedRequest(updated);
+      setActionSuccess("Status updated successfully.");
+      await loadMaintenance();
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      setActionError(
+        error?.response?.data?.detail || "Failed to update status."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <PageWrapper>
@@ -233,13 +330,6 @@ const Dashboard = () => {
             <div className="dash-card">
               <div className="dash-card-head">
                 <span className="dash-card-title">Maintenance requests</span>
-                <span
-                  className="dash-card-more"
-                  onClick={() => navigate("/admin/maintenance")}
-                  style={{ cursor: "pointer" }}
-                >
-                  View all
-                </span>
               </div>
 
               {loadingMaintenance ? (
@@ -252,7 +342,12 @@ const Dashboard = () => {
                     statusStyles[item.priority] || statusStyles.pending;
 
                   return (
-                    <div key={item.id} className="dash-log-item">
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="dash-log-item dash-log-item-btn"
+                      onClick={() => openMaintenanceDetails(item.id)}
+                    >
                       <div className="dash-log-info">
                         <span className="dash-log-name">{item.title}</span>
                         <span className="dash-log-unit">
@@ -269,7 +364,7 @@ const Dashboard = () => {
                       >
                         {statusStyle.label}
                       </span>
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -337,6 +432,141 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {(selectedRequest || loadingRequestDetails) && (
+        <div className="dash-modal-overlay" onClick={closeMaintenanceDetails}>
+          <div
+            className="dash-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="dash-modal-head">
+              <h3 className="dash-modal-title">Maintenance request details</h3>
+              <button
+                type="button"
+                className="dash-modal-close"
+                onClick={closeMaintenanceDetails}
+              >
+                ×
+              </button>
+            </div>
+
+            {loadingRequestDetails ? (
+              <div className="dash-modal-loading">Loading details...</div>
+            ) : selectedRequest ? (
+              <>
+                <div className="dash-modal-section">
+                  <div className="dash-modal-grid">
+                    <div>
+                      <span className="dash-modal-label">Type</span>
+                      <p className="dash-modal-value">{selectedRequest.maintenance_type}</p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Status</span>
+                      <p className="dash-modal-value">{selectedRequest.status}</p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Unit</span>
+                      <p className="dash-modal-value">{selectedRequest.unit_number}</p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Preferred date</span>
+                      <p className="dash-modal-value">{selectedRequest.preferred_date}</p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Resident</span>
+                      <p className="dash-modal-value">
+                        {selectedRequest.resident_username || "Unknown"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Resident email</span>
+                      <p className="dash-modal-value">
+                        {selectedRequest.resident_email || "Unknown"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Assigned technician</span>
+                      <p className="dash-modal-value">
+                        {selectedRequest.assigned_technician_username || "Not assigned"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="dash-modal-label">Technician ID</span>
+                      <p className="dash-modal-value">
+                        {selectedRequest.assigned_technician_id || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="dash-modal-section">
+                  <span className="dash-modal-label">Description</span>
+                  <p className="dash-modal-description">
+                    {selectedRequest.description}
+                  </p>
+                </div>
+
+                <div className="dash-modal-section">
+                  <span className="dash-modal-label">Assign technician</span>
+                  <div className="dash-modal-actions-row">
+                    <input
+                      type="number"
+                      className="dash-modal-input"
+                      placeholder="Enter technician ID"
+                      value={technicianId}
+                      onChange={(e) => setTechnicianId(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="dash-modal-btn"
+                      onClick={handleAssignTechnician}
+                      disabled={actionLoading}
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </div>
+
+                <div className="dash-modal-section">
+                  <span className="dash-modal-label">Update status</span>
+                  <div className="dash-modal-actions-row">
+                    <select
+                      className="dash-modal-select"
+                      value={statusValue}
+                      onChange={(e) => setStatusValue(e.target.value)}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      className="dash-modal-btn dash-modal-btn-secondary"
+                      onClick={handleUpdateStatus}
+                      disabled={actionLoading}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </div>
+
+                {actionError ? (
+                  <div className="dash-modal-feedback dash-modal-error">
+                    {actionError}
+                  </div>
+                ) : null}
+
+                {actionSuccess ? (
+                  <div className="dash-modal-feedback dash-modal-success">
+                    {actionSuccess}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 };
