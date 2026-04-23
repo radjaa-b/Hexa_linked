@@ -37,8 +37,11 @@ class ResidentProfile {
       isActive: json['is_active'] is bool
           ? json['is_active'] as bool
           : _nullableString(json['is_active'])?.toLowerCase() == 'true',
-      unit: _nullableString(json['unit']),
-      phone: _nullableString(json['phone']),
+      unit:
+          _nullableString(json['unit_number']) ?? _nullableString(json['unit']),
+      phone:
+          _nullableString(json['phone_number']) ??
+          _nullableString(json['phone']),
     );
   }
 
@@ -50,8 +53,8 @@ class ResidentProfile {
       'username': username,
       'role': role,
       'is_active': isActive,
-      'unit': unit,
-      'phone': phone,
+      'unit_number': unit,
+      'phone_number': phone,
     };
   }
 
@@ -71,10 +74,7 @@ class ResidentProfile {
         .toUpperCase();
   }
 
-  static String _stringOrFallback(
-    dynamic value, {
-    String fallback = '',
-  }) {
+  static String _stringOrFallback(dynamic value, {String fallback = ''}) {
     final parsed = _nullableString(value);
     if (parsed == null || parsed.isEmpty) return fallback;
     return parsed;

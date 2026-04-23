@@ -218,6 +218,43 @@ class AuthService {
 
     throw AuthException(_extractErrorMessage(response.body));
   }
+  // ─────────────────────────────────────────────────────────────
+  // ADD THESE TWO METHODS TO YOUR AuthService CLASS
+  // Place them after the existing completeAccount() method.
+  // ─────────────────────────────────────────────────────────────
+
+  static Future<void> forgotPassword(String email) async {
+    final response = await _sendRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl()}/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ),
+    );
+
+    // The backend always returns 200 for this endpoint regardless of whether
+    // the email exists, to avoid leaking account information.
+    if (response.statusCode == 200) return;
+
+    throw Exception(_extractErrorMessage(response.body));
+  }
+
+  static Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    final response = await _sendRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl()}/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token.trim(), 'new_password': newPassword}),
+      ),
+    );
+
+    if (response.statusCode == 200) return;
+
+    throw Exception(_extractErrorMessage(response.body));
+  }
 
   static Future<AuthSession> _mockLogin(String email, String password) async {
     await Future.delayed(const Duration(seconds: 1));

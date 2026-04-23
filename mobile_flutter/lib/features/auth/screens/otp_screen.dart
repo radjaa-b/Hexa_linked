@@ -13,10 +13,11 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(6, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   bool loading = false;
 
@@ -49,9 +50,9 @@ class _OtpScreenState extends State<OtpScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        fadeSlideRoute(
-            ResetPasswordScreen(email: widget.email, otp: _otpCode)),
+        MaterialPageRoute(builder: (_) => const ResetPasswordScreen(token: '')),
       );
+      ;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,10 +104,7 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(
-              color: Color(0xFFB8974A),
-              width: 1.5,
-            ),
+            borderSide: const BorderSide(color: Color(0xFFB8974A), width: 1.5),
           ),
         ),
         onChanged: (value) {
@@ -154,10 +152,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Back',
-                  style: TextStyle(
-                    color: Color(0xFF6B9E80),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFF6B9E80), fontSize: 12),
                 ),
               ],
             ),
@@ -226,10 +221,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     },
                     child: const Text(
                       'Resend code',
-                      style: TextStyle(
-                        color: Color(0xFFB8974A),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Color(0xFFB8974A), fontSize: 12),
                     ),
                   ),
                 ),

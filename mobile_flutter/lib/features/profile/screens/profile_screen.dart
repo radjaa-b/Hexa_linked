@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-//  PROFILE SCREEN — Modern dark card style
-//  Location: lib/features/profile/screens/
-//  TODO (Radja): replace mock profile with GET /auth/me
-// ─────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
 import 'package:resident_app/features/profile/models/resident_profile.dart';
@@ -14,16 +8,16 @@ import 'package:resident_app/features/auth/screens/welcome_screen.dart';
 
 // ── Design tokens ─────────────────────────────────────────────
 class _C {
-  static const bg        = Color(0xFF0F1F18); // very dark green bg
-  static const card      = Color(0xFF1A2E24); // dark card surface
-  static const cardLight = Color(0xFF213528); // slightly lighter card
-  static const forest    = Color(0xFF1C3B2E);
+  static const bg = Color(0xFF0F1F18);
+  static const card = Color(0xFF1A2E24);
+  static const cardLight = Color(0xFF213528);
+  static const forest = Color(0xFF1C3B2E);
   static const champagne = Color(0xFFE8D9B5);
-  static const gold      = Color(0xFFB8974A);
-  static const sage      = Color(0xFF6B9E80);
-  static const textPrim  = Color(0xFFE8E4DC);
-  static const textSec   = Color(0xFF8A9E92);
-  static const divider   = Color(0xFF2A3D32);
+  static const gold = Color(0xFFB8974A);
+  static const sage = Color(0xFF6B9E80);
+  static const textPrim = Color(0xFFE8E4DC);
+  static const textSec = Color(0xFF8A9E92);
+  static const divider = Color(0xFF2A3D32);
 }
 
 class ProfileScreen extends StatefulWidget {
@@ -38,22 +32,30 @@ class _ProfileScreenState extends State<ProfileScreen>
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
-  // TODO (Radja): replace with real user from GET /auth/me
-  final _profile = const ResidentProfile(
-    id: 1,
-    name: 'Selsa',
-    email: 'selsa@residence.com',
-    username: 'selsa',
-    role: 'resident',
-    isActive: true,
-    unit: 'Unit 3A',
-    phone: '+213 555 123 456',
-  );
-
+  ResidentProfile? _profile;
+  bool _loadingProfile = true;
   bool _notificationsOn = true;
   String _language = 'English';
   bool _rulesExpanded = false;
   bool _termsExpanded = false;
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await AuthService.whoami();
+      if (!mounted) return;
+
+      setState(() {
+        _profile = profile;
+        _loadingProfile = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _loadingProfile = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -62,11 +64,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _fadeAnim = CurvedAnimation(
-      parent: _animCtrl,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
+    _loadProfile();
   }
 
   @override
@@ -88,6 +88,67 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingProfile) {
+      return const Scaffold(
+        backgroundColor: _C.bg,
+        body: Center(child: CircularProgressIndicator(color: _C.gold)),
+      );
+    }
+
+    if (_profile == null) {
+      return Scaffold(
+        backgroundColor: _C.bg,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: _C.gold,
+                  size: 34,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Unable to load profile.',
+                  style: TextStyle(
+                    color: _C.textPrim,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Please try again or sign in again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _C.textSec,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton(
+                  onPressed: _loadProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _C.gold,
+                    foregroundColor: _C.forest,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final profile = _profile!;
+
     return Scaffold(
       backgroundColor: _C.bg,
       body: FadeTransition(
@@ -97,10 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ─────────────────────────────────────
-              ProfileHeader(profile: _profile),
+              ProfileHeader(profile: profile),
 
-              // ── Personal info ───────────────────────────────
               _label('Personal Information'),
               _darkCard(
                 child: Column(
@@ -108,32 +167,31 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ProfileInfoTile(
                       icon: Icons.person_outline_rounded,
                       label: 'FULL NAME',
-                      value: _profile.name,
+                      value: profile.name,
                     ),
                     _divider(),
                     ProfileInfoTile(
                       icon: Icons.home_outlined,
                       label: 'UNIT',
-                      value: _profile.unit ?? 'Not assigned',
+                      value: profile.unit ?? 'Not assigned',
                     ),
                     _divider(),
                     ProfileInfoTile(
                       icon: Icons.email_outlined,
                       label: 'EMAIL',
-                      value: _profile.email,
+                      value: profile.email,
                     ),
                     _divider(),
                     ProfileInfoTile(
                       icon: Icons.phone_outlined,
                       label: 'PHONE',
-                      value: _profile.phone ?? 'Not provided',
+                      value: profile.phone ?? 'Not provided',
                       isLast: true,
                     ),
                   ],
                 ),
               ),
 
-              // ── Settings ────────────────────────────────────
               _label('Settings'),
               _darkCard(
                 child: Column(
@@ -180,7 +238,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
 
-              // ── Residence Rules ─────────────────────────────
               _label('Legal'),
               _expandableCard(
                 icon: Icons.gavel_rounded,
@@ -198,23 +255,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                 content: _termsText,
               ),
 
-              // ── Logout ──────────────────────────────────────
               const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: LogoutButton(onLogout: _handleLogout),
               ),
 
-              // Version
               const Center(
                 child: Padding(
                   padding: EdgeInsets.only(top: 20),
                   child: Text(
                     'Residence App v1.0.0',
-                    style: TextStyle(
-                      color: Color(0xFF3A5244),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Color(0xFF3A5244), fontSize: 12),
                   ),
                 ),
               ),
@@ -225,166 +277,155 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ── Section label ────────────────────────────────────────────
   Widget _label(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-        child: Text(
-          text.toUpperCase(),
-          style: const TextStyle(
-            color: _C.textSec,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.4,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        color: _C.textSec,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.4,
+      ),
+    ),
+  );
 
-  // ── Dark card ────────────────────────────────────────────────
   Widget _darkCard({required Widget child}) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-          decoration: BoxDecoration(
-            color: _C.card,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _C.divider, width: 1),
-          ),
-          child: child,
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      decoration: BoxDecoration(
+        color: _C.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _C.divider, width: 1),
+      ),
+      child: child,
+    ),
+  );
 
-  // ── Divider ──────────────────────────────────────────────────
-  Widget _divider() => const Divider(
-        height: 1,
-        thickness: 1,
-        color: _C.divider,
-      );
+  Widget _divider() =>
+      const Divider(height: 1, thickness: 1, color: _C.divider);
 
-  // ── Setting row ──────────────────────────────────────────────
   Widget _settingRow({
     required IconData icon,
     required String label,
     required Widget trailing,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _C.gold.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: _C.gold, size: 17),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: _C.textPrim,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            trailing,
-          ],
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    child: Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: _C.gold.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: _C.gold, size: 17),
         ),
-      );
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: _C.textPrim,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        trailing,
+      ],
+    ),
+  );
 
-  // ── Expandable card ──────────────────────────────────────────
   Widget _expandableCard({
     required IconData icon,
     required String title,
     required bool expanded,
     required VoidCallback onTap,
     required String content,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _C.card,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _C.divider, width: 1),
-          ),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: onTap,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: _C.gold.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(icon, color: _C.gold, size: 17),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            color: _C.textPrim,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      AnimatedRotation(
-                        turns: expanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 250),
-                        child: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: _C.textSec,
-                          size: 22,
-                        ),
-                      ),
-                    ],
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Container(
+      decoration: BoxDecoration(
+        color: _C.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _C.divider, width: 1),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _C.gold.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: _C.gold, size: 17),
                   ),
-                ),
-              ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox(width: double.infinity),
-                secondChild: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Divider(height: 1, color: _C.divider),
-                      const SizedBox(height: 14),
-                      Text(
-                        content,
-                        style: const TextStyle(
-                          color: _C.textSec,
-                          fontSize: 13,
-                          height: 1.7,
-                        ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: _C.textPrim,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                crossFadeState: expanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 250),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: _C.textSec,
+                      size: 22,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      );
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 1, color: _C.divider),
+                  const SizedBox(height: 14),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      color: _C.textSec,
+                      fontSize: 13,
+                      height: 1.7,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 250),
+          ),
+        ],
+      ),
+    ),
+  );
 
-  // ── Language picker ──────────────────────────────────────────
   void _showLanguagePicker() {
     showModalBottomSheet(
       context: context,
@@ -465,7 +506,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ── Texts ────────────────────────────────────────────────────
   static const String _rulesText = '''1. Quiet Hours
 Residents must maintain quiet between 10:00 PM and 8:00 AM. Loud music, parties, or disruptive noise during these hours is strictly prohibited.
 

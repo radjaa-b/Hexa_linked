@@ -434,14 +434,35 @@ class _GreetingHeader extends StatefulWidget {
 }
 
 class _GreetingHeaderState extends State<_GreetingHeader> {
+  String _displayName = 'Resident';
+  bool _loadingUser = true;
   WeatherData? _weather;
   bool _loading = true;
   late Timer _timer;
+
+  Future<void> _loadUser() async {
+    try {
+      final profile = await AuthService.whoami();
+      if (!mounted) return;
+
+      setState(() {
+        _displayName = profile.name.isNotEmpty ? profile.name : 'Resident';
+        _loadingUser = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _displayName = 'Resident';
+        _loadingUser = false;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _loadWeather();
+    _loadUser();
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -515,7 +536,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                       ),
                     ),
                     Text(
-                      '$_greeting, Selsa',
+                      '$_greeting, ${_displayName}',
                       style: const TextStyle(
                         color: Color(0xFF6B9E80),
                         fontSize: 13,

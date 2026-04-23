@@ -12,8 +12,8 @@ import "./Residents.css";
 const emptyForm = {
   username: "",
   full_name: "",
-  unit: "",
-  phone: "",
+  unit_number: "",
+  phone_number: "",
   email: "",
 };
 
@@ -41,10 +41,10 @@ const Residents = () => {
           .map((user) => ({
             id: String(user.id),
             username: user.username || "",
-            name: user.username || user.full_name || "Unnamed user",
+            name: user.full_name || user.username || "Unnamed user",
             email: user.email || "",
-            unit: user.unit || "—",
-            phone: user.phone || "—",
+            unit_number: user.unit_number || "—",
+            phone_number: user.phone_number || "—",
             status: user.is_active ? "active" : "suspended",
             email_verified: user.email_verified,
             role: user.role,
@@ -67,7 +67,7 @@ const Residents = () => {
   const filtered = residents.filter((r) => {
     const matchSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.unit.toLowerCase().includes(search.toLowerCase()) ||
+      r.unit_number.toLowerCase().includes(search.toLowerCase()) ||
       r.email.toLowerCase().includes(search.toLowerCase());
 
     const matchStatus =
@@ -88,11 +88,11 @@ const Residents = () => {
   const handleEdit = (resident) => {
     setEditId(resident.id);
     setForm({
-      username: resident.username,
-      full_name: "",
-      unit: resident.unit === "—" ? "" : resident.unit,
-      phone: resident.phone === "—" ? "" : resident.phone,
-      email: resident.email,
+      username: resident.username || "",
+      full_name: resident.raw?.full_name || "",
+      unit_number: resident.raw?.unit_number || "",
+      phone_number: resident.raw?.phone_number || "",
+      email: resident.email || "",
     });
     setFormError("");
     setFormSuccess("");
@@ -110,7 +110,6 @@ const Residents = () => {
     setFormError("");
     setFormSuccess("");
 
-    // CREATE MODE
     if (!editId) {
       if (!form.full_name || !form.email) {
         setFormError("Full name and email are required.");
@@ -121,18 +120,21 @@ const Residents = () => {
 
       try {
         const created = await createResident({
+          username: form.username,
           email: form.email,
           full_name: form.full_name,
+          unit_number: form.unit_number,
+          phone_number: form.phone_number,
           role: "resident",
         });
 
         const newResident = {
           id: String(created.id),
-          username: created.full_name || "",
-          name: created.full_name || "Unnamed user",
+          username: created.username || "",
+          name: created.full_name || created.username || "Unnamed user",
           email: created.email || "",
-          unit: "—",
-          phone: "—",
+          unit_number: created.unit_number || "—",
+          phone_number: created.phone_number || "—",
           status: "active",
           email_verified: created.email_verified,
           role: created.role,
@@ -153,7 +155,6 @@ const Residents = () => {
       return;
     }
 
-    // EDIT MODE
     if (!form.username || !form.email) {
       setFormError("Username and email are required.");
       return;
@@ -164,7 +165,10 @@ const Residents = () => {
     try {
       const payload = {
         username: form.username,
+        full_name: form.full_name,
         email: form.email,
+        unit_number: form.unit_number,
+        phone_number: form.phone_number,
       };
 
       const updated = await updateResident(editId, payload);
@@ -175,8 +179,10 @@ const Residents = () => {
             ? {
                 ...r,
                 username: updated.username,
-                name: updated.username,
+                name: updated.full_name || updated.username,
                 email: updated.email,
+                unit_number: updated.unit_number || "—",
+                phone_number: updated.phone_number || "—",
                 status: updated.is_active ? "active" : "suspended",
                 email_verified: updated.email_verified,
                 role: updated.role,
@@ -381,8 +387,8 @@ const Residents = () => {
                           <div className="res-td-name">{r.name}</div>
                           <div className="res-td-sub">{r.email}</div>
                         </td>
-                        <td>{r.unit}</td>
-                        <td>{r.phone}</td>
+                        <td>{r.unit_number}</td>
+                        <td>{r.phone_number}</td>
                         <td>
                           <span className={`res-badge ${r.status}`}>
                             {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
@@ -427,18 +433,14 @@ const Residents = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="res-rp-form">
-              {!editId && (
-                <>
-                  <label className="res-rp-field-label">Full name</label>
-                  <input
-                    className="res-rp-input"
-                    name="full_name"
-                    placeholder="e.g. Ahmed Benali"
-                    value={form.full_name}
-                    onChange={handleFormChange}
-                  />
-                </>
-              )}
+              <label className="res-rp-field-label">Full name</label>
+              <input
+                className="res-rp-input"
+                name="full_name"
+                placeholder="e.g. Ahmed Benali"
+                value={form.full_name}
+                onChange={handleFormChange}
+              />
 
               <label className="res-rp-field-label">Username</label>
               <input
@@ -447,27 +449,24 @@ const Residents = () => {
                 placeholder="e.g. ahmedbenali"
                 value={form.username}
                 onChange={handleFormChange}
-                disabled={!editId}
               />
 
               <label className="res-rp-field-label">Unit number</label>
               <input
                 className="res-rp-input"
-                name="unit"
+                name="unit_number"
                 placeholder="e.g. A-12"
-                value={form.unit}
+                value={form.unit_number}
                 onChange={handleFormChange}
-                disabled
               />
 
               <label className="res-rp-field-label">Phone</label>
               <input
                 className="res-rp-input"
-                name="phone"
+                name="phone_number"
                 placeholder="+213..."
-                value={form.phone}
+                value={form.phone_number}
                 onChange={handleFormChange}
-                disabled
               />
 
               <label className="res-rp-field-label">Email</label>

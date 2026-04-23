@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../api/axiosInstance";
 import { loginApi } from "../../api/auth.api";
 import { saveAuth } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
@@ -8,23 +9,12 @@ import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
- 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const decodeJwtPayload = (token) => {
-    try {
-      const payload = token.split(".")[1];
-      const decoded = JSON.parse(atob(payload));
-      return decoded;
-    } catch {
-      return null;
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,34 +31,33 @@ const Login = () => {
         return;
       }
 
-      const payload = decodeJwtPayload(token);
+      const me = await axiosInstance.get("/auth/whoami", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      if (!payload) {
-        setError("Failed to decode authentication token.");
-      return;
-}
-      const role = payload.role;
-      console.log("ROLE FROM TOKEN:", role);
+      const userData = me.data;
+
       const user = {
-        id: payload.sub,
-        email,
-        role,
+        id: userData.id,
+        email: userData.email,
+        name: userData.full_name || userData.username || userData.email,
+        role: userData.role,
       };
 
-      if (!role) {
-        setError("No role found inside token.");
+      if (!user.role) {
+        setError("No role found for this user.");
         return;
       }
 
-      // Save token + decoded role locally
       saveAuth(token, user);
 
-      // Redirect based on role
-      if (role === ROLES.ADMIN) {
+      if (user.role === ROLES.ADMIN) {
         navigate(ROUTES.ADMIN_DASHBOARD);
-      } else if (role === ROLES.SECURITY) {
+      } else if (user.role === ROLES.SECURITY) {
         navigate(ROUTES.SECURITY_GATE);
-      } else if (role === ROLES.TECHNICIAN) {
+      } else if (user.role === ROLES.TECHNICIAN) {
         navigate(ROUTES.TECH_MAINTENANCE);
       } else {
         setError("Unauthorized role.");

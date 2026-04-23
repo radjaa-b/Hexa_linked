@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../widgets/auth_scaffold.dart';
+import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/core/navigation/app_route.dart';
+import 'login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  final String email;
-  final String otp;
-  const ResetPasswordScreen(
-      {super.key, required this.email, required this.otp});
+  final String token;
+
+  const ResetPasswordScreen({super.key, required this.token});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -44,21 +46,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return;
     }
 
-    if (newPassword.text.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 8 characters'),
-          backgroundColor: Color(0xFF152E22),
-        ),
-      );
-      return;
-    }
-
     setState(() => loading = true);
 
     try {
-      // TODO: await AuthService.resetPassword(widget.email, widget.otp, newPassword.text);
-      await Future.delayed(const Duration(milliseconds: 900));
+      await AuthService.resetPassword(
+        token: widget.token,
+        newPassword: newPassword.text,
+      );
 
       if (!mounted) return;
 
@@ -69,7 +63,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         ),
       );
 
-      Navigator.popUntil(context, (route) => route.isFirst);
+      Navigator.pushAndRemoveUntil(
+        context,
+        fadeSlideRoute(const LoginScreen()),
+        (route) => false,
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,10 +115,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Back',
-                  style: TextStyle(
-                    color: Color(0xFF6B9E80),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFF6B9E80), fontSize: 12),
                 ),
               ],
             ),
@@ -128,7 +123,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
           const Spacer(),
 
-          // ── Headline ──
           const Text(
             'NEW PASSWORD',
             style: TextStyle(
@@ -161,7 +155,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
           const SizedBox(height: 28),
 
-          // ── Form panel ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -186,8 +179,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   obscure: true,
                 ),
                 const SizedBox(height: 16),
-
-                // Reset button
                 SizedBox(
                   width: double.infinity,
                   child: GestureDetector(
@@ -279,10 +270,7 @@ class _DarkField extends StatelessWidget {
             controller: controller,
             obscureText: obscure,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              color: Color(0xFFE8D9B5),
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Color(0xFFE8D9B5), fontSize: 14),
             cursorColor: const Color(0xFFB8974A),
             decoration: InputDecoration(
               isDense: true,

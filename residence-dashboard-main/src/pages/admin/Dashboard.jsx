@@ -248,7 +248,7 @@ const Dashboard = () => {
 
             <div className="dash-hero-title">
               Good {getGreeting()},<br />
-              {user?.name || "Administrator"}
+              Administrator
             </div>
 
             <div className="dash-hero-stats">
