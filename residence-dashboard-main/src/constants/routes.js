@@ -12,6 +12,7 @@ export const ROUTES = {
   ADMIN_MESSAGES:   "/admin/messages",  // ← also handles announcements
   ADMIN_ACCESS_LOG: "/admin/access-log",
   ADMIN_CONSUMPTION:"/admin/consumption",
+  ADMIN_ALERTS: "/admin/alerts",
 
   // Security agent pages
   SECURITY_GATE:      "/security/gate",

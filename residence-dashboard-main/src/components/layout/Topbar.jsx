@@ -15,6 +15,7 @@ const navLinks = {
     { label: "Access log",    path: ROUTES.ADMIN_ACCESS_LOG },
     { label: "Communication",      path: ROUTES.ADMIN_MESSAGES },
     { label: "Consumption",   path: ROUTES.ADMIN_CONSUMPTION },
+    { label: "Alerts", path: ROUTES.ADMIN_ALERTS },
   ],
   [ROLES.SECURITY]: [
     { label: "Gate control",  path: ROUTES.SECURITY_GATE },

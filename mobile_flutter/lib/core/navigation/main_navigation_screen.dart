@@ -19,13 +19,23 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _pageIndex = 0;
 
-  void _openEmergencyScreen() {
+  Future<void> _openEmergencyScreen() async {
     HapticFeedback.heavyImpact();
-    showDialog(
+
+    final sent = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const EmergencyDialog(),
     );
+
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Incident reported successfully.'),
+          backgroundColor: Color(0xFF1C3B2E),
+        ),
+      );
+    }
   }
 
   @override

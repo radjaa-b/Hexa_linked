@@ -16,12 +16,48 @@ class _EmergencyDialogState extends State<EmergencyDialog> {
   EmergencyState _state = EmergencyState.idle;
   String? _errorMessage;
 
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+
   final _types = [
-    (type: EmergencyType.fire,      label: 'Fire',      icon: Icons.local_fire_department, color: Colors.orange),
-    (type: EmergencyType.medical,   label: 'Medical',   icon: Icons.medical_services,      color: Colors.red),
-    (type: EmergencyType.intrusion, label: 'Intrusion', icon: Icons.lock_open,             color: Colors.purple),
-    (type: EmergencyType.other,     label: 'Other',     icon: Icons.warning_amber,         color: Colors.grey),
+    (
+      type: EmergencyType.fire,
+      label: 'Fire',
+      icon: Icons.local_fire_department,
+      color: Colors.orange,
+    ),
+    (
+      type: EmergencyType.medical,
+      label: 'Medical',
+      icon: Icons.medical_services,
+      color: Colors.red,
+    ),
+    (
+      type: EmergencyType.security,
+      label: 'Security',
+      icon: Icons.security,
+      color: Colors.purple,
+    ),
+    (
+      type: EmergencyType.noise,
+      label: 'Noise',
+      icon: Icons.volume_up_rounded,
+      color: Colors.blueGrey,
+    ),
+    (
+      type: EmergencyType.other,
+      label: 'Other',
+      icon: Icons.warning_amber,
+      color: Colors.grey,
+    ),
   ];
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
     if (_selected == null) return;
@@ -35,16 +71,21 @@ class _EmergencyDialogState extends State<EmergencyDialog> {
       await EmergencyService.send(
         EmergencyRequest(
           type: _selected!,
-          residentId: 'mock-resident-01', // replace with real id from auth later
+          description: _descriptionController.text.trim(),
+          location: _locationController.text.trim(),
         ),
       );
+
+      if (!mounted) return;
       setState(() => _state = EmergencyState.success);
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) Navigator.pop(context);
+
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _state = EmergencyState.error;
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     }
   }
@@ -52,89 +93,112 @@ class _EmergencyDialogState extends State<EmergencyDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(22),
         child: _state == EmergencyState.loading
             ? const _LoadingView()
             : _state == EmergencyState.success
-                ? const _SuccessView()
-                : _IdleView(
-                    types: _types,
-                    selected: _selected,
-                    errorMessage: _errorMessage,
-                    onSelect: (t) => setState(() => _selected = t),
-                    onCancel: () => Navigator.pop(context),
-                    onConfirm: _submit,
-                  ),
+            ? const _SuccessView()
+            : SingleChildScrollView(
+                child: _IdleView(
+                  types: _types,
+                  selected: _selected,
+                  errorMessage: _errorMessage,
+                  descriptionController: _descriptionController,
+                  locationController: _locationController,
+                  onSelect: (type) => setState(() => _selected = type),
+                  onCancel: () => Navigator.pop(context, false),
+                  onConfirm: _submit,
+                ),
+              ),
       ),
     );
   }
 }
 
-// ── Idle view ────────────────────────────────────────────────────────────────
 class _IdleView extends StatelessWidget {
-  final List<({EmergencyType type, String label, IconData icon, Color color})> types;
-  final EmergencyType? selected;
-  final String? errorMessage;
-  final ValueChanged<EmergencyType> onSelect;
-  final VoidCallback onCancel;
-  final VoidCallback onConfirm;
-
   const _IdleView({
     required this.types,
     required this.selected,
     required this.errorMessage,
+    required this.descriptionController,
+    required this.locationController,
     required this.onSelect,
     required this.onCancel,
     required this.onConfirm,
   });
+
+  final List<({EmergencyType type, String label, IconData icon, Color color})>
+  types;
+  final EmergencyType? selected;
+  final String? errorMessage;
+  final TextEditingController descriptionController;
+  final TextEditingController locationController;
+  final ValueChanged<EmergencyType> onSelect;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.warning_rounded, color: Colors.red, size: 48),
+        const Icon(Icons.warning_rounded, color: Color(0xFFC0392B), size: 48),
         const SizedBox(height: 8),
-        const Text('Emergency Alert',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text(
+          'Emergency Alert',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
-        const Text('Select the type of emergency',
-            style: TextStyle(color: Colors.grey)),
-        const SizedBox(height: 20),
+        const Text(
+          'Select the incident type',
+          style: TextStyle(color: Colors.grey),
+        ),
+        const SizedBox(height: 18),
 
-        // ── Type grid ──────────────────────────────────────────
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
           childAspectRatio: 2.2,
-          children: types.map((t) {
-            final isSelected = selected == t.type;
+          children: types.map((item) {
+            final isSelected = selected == item.type;
+
             return GestureDetector(
-              onTap: () => onSelect(t.type),
+              onTap: () => onSelect(item.type),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 decoration: BoxDecoration(
-                  color: isSelected ? t.color.withOpacity(0.15) : Colors.grey.shade100,
+                  color: isSelected
+                      ? item.color.withOpacity(0.15)
+                      : Colors.grey.shade100,
                   border: Border.all(
-                    color: isSelected ? t.color : Colors.grey.shade300,
+                    color: isSelected ? item.color : Colors.grey.shade300,
                     width: isSelected ? 2 : 1,
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(t.icon, color: isSelected ? t.color : Colors.grey, size: 20),
+                    Icon(
+                      item.icon,
+                      color: isSelected ? item.color : Colors.grey,
+                      size: 20,
+                    ),
                     const SizedBox(width: 6),
-                    Text(t.label,
-                        style: TextStyle(
-                          color: isSelected ? t.color : Colors.grey.shade700,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        )),
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        color: isSelected ? item.color : Colors.grey.shade700,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -142,27 +206,47 @@ class _IdleView extends StatelessWidget {
           }).toList(),
         ),
 
-        // ── Error message ──────────────────────────────────────
+        const SizedBox(height: 16),
+
+        TextField(
+          controller: locationController,
+          decoration: InputDecoration(
+            labelText: 'Location optional',
+            hintText: 'Example: Block A, parking, gate...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        TextField(
+          controller: descriptionController,
+          minLines: 2,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: 'Description optional',
+            hintText: 'Add details if needed...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+
         if (errorMessage != null) ...[
           const SizedBox(height: 12),
-          Text(errorMessage!,
-              style: const TextStyle(color: Colors.red, fontSize: 13),
-              textAlign: TextAlign.center),
+          Text(
+            errorMessage!,
+            style: const TextStyle(color: Colors.red, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
         ],
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
 
-        // ── Buttons ────────────────────────────────────────────
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 onPressed: onCancel,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: Colors.grey),
-                ),
-                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                child: const Text('Cancel'),
               ),
             ),
             const SizedBox(width: 12),
@@ -170,11 +254,13 @@ class _IdleView extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: selected == null ? null : onConfirm,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: const Color(0xFFC0392B),
                   disabledBackgroundColor: Colors.red.shade200,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Send Alert', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Send Alert',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -184,7 +270,6 @@ class _IdleView extends StatelessWidget {
   }
 }
 
-// ── Loading view ─────────────────────────────────────────────────────────────
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
 
@@ -194,7 +279,7 @@ class _LoadingView extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(height: 20),
-        CircularProgressIndicator(color: Colors.red),
+        CircularProgressIndicator(color: Color(0xFFC0392B)),
         SizedBox(height: 20),
         Text('Sending alert...', style: TextStyle(color: Colors.grey)),
         SizedBox(height: 20),
@@ -203,7 +288,6 @@ class _LoadingView extends StatelessWidget {
   }
 }
 
-// ── Success view ─────────────────────────────────────────────────────────────
 class _SuccessView extends StatelessWidget {
   const _SuccessView();
 
@@ -215,11 +299,15 @@ class _SuccessView extends StatelessWidget {
         SizedBox(height: 20),
         Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
         SizedBox(height: 12),
-        Text('Alert Sent!',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(
+          'Alert Sent!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         SizedBox(height: 8),
-        Text('Security has been notified.',
-            style: TextStyle(color: Colors.grey)),
+        Text(
+          'Security has been notified.',
+          style: TextStyle(color: Colors.grey),
+        ),
         SizedBox(height: 20),
       ],
     );

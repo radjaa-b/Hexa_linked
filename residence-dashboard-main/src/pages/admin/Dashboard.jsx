@@ -8,6 +8,7 @@ import {
   updateMaintenanceStatus,
   assignTechnicianToMaintenance,
 } from "../../services/maintenanceService";
+import { getAlerts } from "../../services/alertService";
 
 const mockStats = {
   totalResidents: 120,
@@ -78,7 +79,8 @@ const Dashboard = () => {
   const [stats] = useState(mockStats);
   const [accessLog] = useState(mockAccessLog);
   const [maintenance, setMaintenance] = useState([]);
-  const [alerts] = useState(mockAlerts);
+  const [alerts, setAlerts] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [visitors] = useState(mockVisitors);
   const [consumption] = useState(mockConsumption);
 
@@ -126,8 +128,43 @@ const Dashboard = () => {
     }
   };
 
+  const loadAlerts = async () => {
+  try {
+    setLoadingAlerts(true);
+
+    const data = await getAlerts();
+    console.log("ALERTS RAW DATA:", data);
+
+    const normalized = Array.isArray(data)
+      ? data
+          .slice(0, 3) // only show latest 3 like your UI
+          .map((item) => ({
+            id: item.id,
+            title: item.incident_type?.toUpperCase() || "Alert",
+            sub: `${item.location || "Unknown"} · ${new Date(item.created_at).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}`,
+            type:
+              item.incident_type === "fire"
+                ? "danger"
+                : item.incident_type === "medical"
+                ? "warning"
+                : item.incident_type === "security"
+                ? "danger"
+                : "warning",
+          }))
+      : [];
+
+    setAlerts(normalized);
+  } catch (error) {
+    console.error("Failed to load alerts:", error);
+    setAlerts([]);
+  } finally {
+    setLoadingAlerts(false);
+  }
+};
+
   useEffect(() => {
     loadMaintenance();
+    loadAlerts();
   }, []);
 
   const openMaintenanceDetails = async (id) => {
@@ -409,15 +446,21 @@ const Dashboard = () => {
           </div>
 
           <div className="dash-rp-section">
-            <div className="dash-rp-title">Alerts</div>
+  <div className="dash-rp-title">Alerts</div>
 
-            {alerts.map((alert) => (
-              <div key={alert.id} className={`dash-rp-alert ${alert.type}`}>
-                <div className="dash-rp-alert-title">{alert.title}</div>
-                <div className="dash-rp-alert-sub">{alert.sub}</div>
-              </div>
-            ))}
-          </div>
+  {loadingAlerts ? (
+    <div className="dash-empty">Loading alerts...</div>
+  ) : alerts.length === 0 ? (
+    <div className="dash-empty">No alerts</div>
+  ) : (
+    alerts.map((alert) => (
+      <div key={alert.id} className={`dash-rp-alert ${alert.type}`}>
+        <div className="dash-rp-alert-title">{alert.title}</div>
+        <div className="dash-rp-alert-sub">{alert.sub}</div>
+      </div>
+    ))
+  )}
+</div>
 
           <div className="dash-rp-section">
             <div className="dash-rp-title">Pending visitors</div>

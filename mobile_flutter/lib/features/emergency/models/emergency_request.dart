@@ -1,18 +1,38 @@
-enum EmergencyType { fire, medical, intrusion, other }
+enum EmergencyType { fire, medical, security, noise, other }
+
+extension EmergencyTypeApi on EmergencyType {
+  String get apiValue => name;
+
+  String get label {
+    switch (this) {
+      case EmergencyType.fire:
+        return 'Fire';
+      case EmergencyType.medical:
+        return 'Medical';
+      case EmergencyType.security:
+        return 'Security';
+      case EmergencyType.noise:
+        return 'Noise';
+      case EmergencyType.other:
+        return 'Other';
+    }
+  }
+}
 
 class EmergencyRequest {
   final EmergencyType type;
-  final DateTime timestamp;
-  final String residentId;
+  final String description;
+  final String location;
 
-  EmergencyRequest({
+  const EmergencyRequest({
     required this.type,
-    required this.residentId,
-  }) : timestamp = DateTime.now();
+    this.description = '',
+    this.location = '',
+  });
 
   Map<String, dynamic> toJson() => {
-    'type'       : type.name,
-    'timestamp'  : timestamp.toIso8601String(),
-    'residentId' : residentId,
+    'incident_type': type.apiValue,
+    'description': description,
+    'location': location,
   };
 }
