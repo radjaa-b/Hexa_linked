@@ -65,27 +65,30 @@
   flex-wrap: wrap;
 }
 
-.surv-hs { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 3px; 
+.surv-hs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
-.surv-hs-val   { 
-  font-size: 26px; 
-  font-weight: 600; 
-  color: white; 
+
+.surv-hs-val {
+  font-size: 26px;
+  font-weight: 600;
+  color: white;
   line-height: 1;
 }
-.surv-hs-label { 
-  font-size: 10.5px; 
-  color: rgba(255,255,255,0.45); 
+
+.surv-hs-label {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.45);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.surv-hs-div   { 
-  width: 1px; 
-  height: 38px; 
-  background: rgba(255,255,255,0.12); 
+
+.surv-hs-div {
+  width: 1px;
+  height: 38px;
+  background: rgba(255,255,255,0.12);
 }
 
 /* Filters */
@@ -103,6 +106,7 @@
 }
 
 .surv-filter-btn {
+  position: relative;
   padding: 8px 18px;
   font-size: 12.5px;
   border-radius: 8px;
@@ -135,6 +139,18 @@
   border-radius: 50%;
   background: #e74c3c;
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.3);
+}
+
+.surv-type-filter {
+  padding: 8px 14px;
+  font-size: 12.5px;
+  border-radius: 8px;
+  border: 1px solid #e0e0da;
+  background: white;
+  color: #444;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
 }
 
 /* Alert list */
@@ -171,17 +187,34 @@
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
-.surv-alert.active.critical { border-left: 4px solid #e74c3c; }
-.surv-alert.active.high     { border-left: 4px solid #e67e22; }
-.surv-alert.active.medium   { border-left: 4px solid #d97706; }
-.surv-alert.active.low      { border-left: 4px solid #64748b; }
-
-.surv-alert.resolved { 
-  opacity: 0.75; 
-  border-left-color: #10b981;
+.surv-alert.pending.critical,
+.surv-alert.in_progress.critical {
+  border-left: 4px solid #e74c3c;
 }
 
-.surv-alert-left { flex-shrink: 0; }
+.surv-alert.pending.high,
+.surv-alert.in_progress.high {
+  border-left: 4px solid #e67e22;
+}
+
+.surv-alert.pending.medium,
+.surv-alert.in_progress.medium {
+  border-left: 4px solid #d97706;
+}
+
+.surv-alert.pending.low,
+.surv-alert.in_progress.low {
+  border-left: 4px solid #64748b;
+}
+
+.surv-alert.resolved {
+  opacity: 0.75;
+  border-left: 4px solid #10b981;
+}
+
+.surv-alert-left {
+  flex-shrink: 0;
+}
 
 .surv-alert-icon {
   width: 46px;
@@ -193,7 +226,10 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-.surv-alert-body { flex: 1; min-width: 0; }
+.surv-alert-body {
+  flex: 1;
+  min-width: 0;
+}
 
 .surv-alert-top {
   display: flex;
@@ -217,7 +253,8 @@
   border: 1px solid rgba(0,0,0,0.08);
 }
 
-.surv-active-pill, .surv-resolved-pill {
+.surv-active-pill,
+.surv-resolved-pill {
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 20px;
@@ -247,9 +284,13 @@
   gap: 6px;
   font-size: 12px;
   color: #777;
+  flex-wrap: wrap;
 }
 
-.surv-meta-sep { color: #ddd; margin: 0 4px; }
+.surv-meta-sep {
+  color: #ddd;
+  margin: 0 4px;
+}
 
 .surv-alert-note {
   font-size: 12.5px;
@@ -261,7 +302,60 @@
   border-left: 3px solid #14b8a6;
 }
 
-/* Resolve */
+/* Action buttons */
+.surv-alert-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-width: 150px;
+  padding-top: 4px;
+}
+
+.surv-resolve-btn {
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.surv-resolve-btn:hover {
+  transform: translateY(-1px);
+}
+
+.surv-resolve-btn.start {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid rgba(67, 56, 202, 0.14);
+}
+
+.surv-resolve-btn.start:hover {
+  background: #e0e7ff;
+}
+
+.surv-resolve-btn.resolve {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.16);
+}
+
+.surv-resolve-btn.resolve:hover {
+  background: #d1fae5;
+}
+
+.surv-resolve-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Old resolve panel styles kept harmlessly, in case you reuse notes later */
 .surv-resolve-panel {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -295,7 +389,8 @@
   margin-top: 12px;
 }
 
-.surv-cancel-btn, .surv-confirm-btn {
+.surv-cancel-btn,
+.surv-confirm-btn {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
@@ -317,5 +412,23 @@
   color: white;
 }
 
-.surv-confirm-btn:hover { background: #0f766e; }
-.surv-confirm-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+.surv-confirm-btn:hover {
+  background: #0f766e;
+}
+
+.surv-confirm-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .surv-alert {
+    flex-direction: column;
+  }
+
+  .surv-alert-action {
+    width: 100%;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}

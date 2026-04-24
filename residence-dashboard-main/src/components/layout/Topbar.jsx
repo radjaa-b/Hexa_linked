@@ -22,6 +22,7 @@ const navLinks = {
     { label: "Visitors",      path: ROUTES.SECURITY_VISITORS },
     { label: "Surveillance",  path: ROUTES.SECURITY_ALERTS },
     { label: "Incidents",     path: ROUTES.SECURITY_INCIDENTS },
+    { label: "Numbers", path: ROUTES.SECURITY_NUMBERS },
   ],
   [ROLES.TECHNICIAN]: [
   { label: "Maintenance", path: ROUTES.TECH_MAINTENANCE },

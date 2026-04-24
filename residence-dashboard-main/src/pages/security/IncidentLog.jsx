@@ -129,9 +129,7 @@ const IncidentLog = () => {
       const data = await getAlerts();
       console.log("SECURITY ALERTS RAW DATA:", data);
 
-      const normalized = Array.isArray(data)
-        ? data.map(normalizeAlert)
-        : [];
+      const normalized = Array.isArray(data) ? data.map(normalizeAlert) : [];
 
       setAlerts(normalized);
       setLastUpdated(new Date());
@@ -146,8 +144,14 @@ const IncidentLog = () => {
   };
 
   useEffect(() => {
+  loadAlerts();
+
+  const intervalId = setInterval(() => {
     loadAlerts();
-  }, []);
+  }, 15000);
+
+  return () => clearInterval(intervalId);
+}, []);
 
   const updateStatus = async (id, newStatus) => {
     try {
@@ -157,9 +161,7 @@ const IncidentLog = () => {
       const updated = await updateAlertStatus(id, newStatus);
 
       setAlerts((prev) =>
-        prev.map((alert) =>
-          alert.id === id ? normalizeAlert(updated) : alert
-        )
+        prev.map((alert) => (alert.id === id ? normalizeAlert(updated) : alert))
       );
 
       setLastUpdated(new Date());
@@ -260,7 +262,13 @@ const IncidentLog = () => {
               </div>
             </div>
 
-            <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", marginTop: "12px" }}>
+            <div
+              style={{
+                fontSize: "11px",
+                color: "rgba(255,255,255,0.5)",
+                marginTop: "12px",
+              }}
+            >
               Last updated{" "}
               {lastUpdated.toLocaleTimeString([], {
                 hour: "2-digit",
@@ -306,9 +314,7 @@ const IncidentLog = () => {
           ) : alertError ? (
             <div className="surv-empty">{alertError}</div>
           ) : filtered.length === 0 ? (
-            <div className="surv-empty">
-              No alerts found for the selected filters.
-            </div>
+            <div className="surv-empty">No alerts found for the selected filters.</div>
           ) : (
             filtered.map((alert) => (
               <div
@@ -342,7 +348,11 @@ const IncidentLog = () => {
                       {severityConfig[alert.severity].label}
                     </span>
 
-                    <span className={`surv-${alert.status === "resolved" ? "resolved" : "active"}-pill`}>
+                    <span
+                      className={`surv-${
+                        alert.status === "resolved" ? "resolved" : "active"
+                      }-pill`}
+                    >
                       {statusLabels[alert.status] || alert.status}
                     </span>
                   </div>
@@ -376,7 +386,7 @@ const IncidentLog = () => {
                   <div className="surv-alert-action">
                     {alert.status === "pending" && (
                       <button
-                        className="surv-resolve-btn"
+                        className="surv-resolve-btn start"
                         onClick={() => updateStatus(alert.id, "in_progress")}
                         disabled={resolvingId === alert.id}
                       >
@@ -385,13 +395,21 @@ const IncidentLog = () => {
                     )}
 
                     {alert.status === "in_progress" && (
-                      <button
-                        className="surv-resolve-btn"
-                        onClick={() => updateStatus(alert.id, "resolved")}
-                        disabled={resolvingId === alert.id}
-                      >
-                        {resolvingId === alert.id ? "Updating..." : "Mark as resolved"}
-                      </button>
+                     <button
+  className="surv-resolve-btn resolve"
+  onClick={() => {
+    const confirmed = window.confirm(
+      "Are you sure you want to mark this alert as resolved?"
+    );
+
+    if (confirmed) {
+      updateStatus(alert.id, "resolved");
+    }
+  }}
+  disabled={resolvingId === alert.id}
+>
+  {resolvingId === alert.id ? "Updating..." : "✓ Mark as resolved"}
+</button>
                     )}
                   </div>
                 )}

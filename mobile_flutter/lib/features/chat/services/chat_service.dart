@@ -1,10 +1,9 @@
 import 'dart:convert';
-
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:resident_app/features/auth/services/auth_service.dart';
 import 'package:resident_app/features/chat/models/conversation.dart';
 import 'package:resident_app/features/chat/models/message.dart';
+import 'package:flutter/material.dart';
 
 class ChatService {
   static String _currentUserId = '';
@@ -30,17 +29,39 @@ class ChatService {
     _conversationCacheById.clear();
   }
 
-  static Future<List<Message>> fetchMessages() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return _mockGroupMessages();
+  static Future<List<Message>> fetchMessages(String conversationId) async {
+    return fetchDmMessages(conversationId);
   }
 
-  static Future<void> sendMessage(String content) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+  static Future<void> sendMessage(String conversationId, String content) async {
+    return sendDmMessage(conversationId, content);
   }
 
   static Future<void> sendImage(String imagePath) async {
     await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  static Future<Conversation> fetchGroupConversation() async {
+    await _ensureCurrentUserLoaded();
+
+    final response = await http
+        .get(
+          Uri.parse('${_baseUrl()}/chat/home'),
+          headers: await _authHeaders(),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode != 200) {
+      throw Exception(_extractErrorMessage(response.body));
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final groupJson = data['group_chat'] as Map<String, dynamic>;
+
+    final group = _mapConversation(groupJson);
+    _conversationCacheById[group.id] = group;
+
+    return group;
   }
 
   static Future<List<Conversation>> fetchConversations() async {
@@ -199,18 +220,9 @@ class ChatService {
   }
 
   static Future<void> _ensureCurrentUserLoaded() async {
-    if (_currentUserId.isNotEmpty) return;
-
-    _currentUserLoad ??= _loadCurrentUser();
-
-    try {
-      await _currentUserLoad;
-    } catch (_) {
-      // If whoami fails (e.g. network dropped), reset so it retries next time
-      // instead of caching a broken future.
-      _currentUserLoad = null;
-      rethrow;
-    }
+    // Always reload the current user from the active token.
+    // This prevents the app from keeping the previous logged-in resident ID.
+    await _loadCurrentUser();
   }
 
   static Future<void> _loadCurrentUser() async {
@@ -238,8 +250,10 @@ class ChatService {
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    _currentUserId = '${data['id'] ?? ''}';
+    _currentUserId = (data['id'] ?? '').toString();
 
+    debugPrint('WHOAMI => $data');
+    debugPrint('MY USER ID => $_currentUserId');
     // Prefer full_name; fall back to username derived from email.
     final fullName = (data['full_name'] as String?)?.trim();
     if (fullName != null && fullName.isNotEmpty) {
@@ -295,7 +309,11 @@ class ChatService {
     Conversation? conversation,
   ) {
     final senderId = '${json['sender_id'] ?? ''}';
-    final isMe = senderId == _currentUserId;
+    final isMe = senderId.trim() == _currentUserId.trim();
+
+    debugPrint(
+      'MESSAGE MAP => senderId=$senderId | currentUserId=$_currentUserId | isMe=$isMe',
+    );
     final senderName = isMe
         ? _currentUserName
         : (conversation?.otherUserName ?? 'Resident');
@@ -336,12 +354,7 @@ class ChatService {
   }
 
   static String _baseUrl() {
-    final rawBaseUrl = dotenv.env['API_BASE_URL'];
-    if (rawBaseUrl == null || rawBaseUrl.trim().isEmpty) {
-      throw Exception('API_BASE_URL is missing from .env');
-    }
-
-    return rawBaseUrl.trim().replaceFirst(RegExp(r'/$'), '');
+    return AuthService.baseUrl;
   }
 
   static int _conversationId(String conversationId) {

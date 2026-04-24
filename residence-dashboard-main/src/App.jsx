@@ -10,6 +10,7 @@ import { ROUTES } from "./constants/routes";
 import { ROLES }  from "./constants/roles";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+
 // Auth
 import Login from "./pages/auth/Login";
 
@@ -26,7 +27,7 @@ import GateControl  from "./pages/security/GateControl";
 import Visitors     from "./pages/security/Visitors";
 import Surveillance from "./pages/security/Surveillance";
 import IncidentLog  from "./pages/security/IncidentLog";
-
+import ImportantNumbers from "./pages/security/ImportantNumbers";
 // Technician pages
 import MaintenanceRequests from "./pages/technician/MaintenanceRequests";
 import EnergyMonitor       from "./pages/technician/EnergyMonitor";
@@ -94,6 +95,11 @@ const App = () => {
             <IncidentLog />
           </ProtectedRoute>
         }/>
+        <Route path={ROUTES.SECURITY_NUMBERS} element={
+  <ProtectedRoute allowedRoles={[ROLES.SECURITY]}>
+    <ImportantNumbers />
+  </ProtectedRoute>
+}/>
 
         {/* ── Technician routes ── */}
         <Route path={ROUTES.TECH_MAINTENANCE} element={

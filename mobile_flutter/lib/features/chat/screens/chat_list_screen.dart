@@ -27,6 +27,7 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
+  Conversation? _groupConversation;
   List<Conversation> _conversations = [];
   bool _loading = true;
 
@@ -37,13 +38,26 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _load();
   }
 
+  Future<void> _refreshAfterChat() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    await _load();
+  }
+
   Future<void> _load() async {
     debugPrint('CHAT LIST: loading conversations...');
     try {
+      final group = await ChatService.fetchGroupConversation();
       final convs = await ChatService.fetchConversations();
-      debugPrint('CHAT LIST: conversations loaded => count=${convs.length}');
+
+      debugPrint('CHAT LIST: group loaded => id=${group.id}');
+      debugPrint(
+        'CHAT LIST: private conversations loaded => count=${convs.length}',
+      );
+
       if (mounted) {
         setState(() {
+          _groupConversation = group;
           _conversations = convs;
           _loading = false;
         });
@@ -51,16 +65,47 @@ class _ChatListScreenState extends State<ChatListScreen> {
     } catch (e, st) {
       debugPrint('CHAT LIST: load failed => $e');
       debugPrint('$st');
+
       if (mounted) {
-        setState(() {
-          _loading = false;
-        });
+        setState(() => _loading = false);
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_formatErrorMessage(e))));
       }
     }
   }
 
+  Future<void> _openGroupChat() async {
+    if (_groupConversation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Residence chat is still loading.')),
+      );
+      return;
+    }
+
+    debugPrint(
+      'CHAT LIST: open residence group chat => id=${_groupConversation!.id}',
+    );
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          conversationId: _groupConversation!.id,
+          title: 'Residence Chat',
+          subtitle: 'All residents',
+          isGroup: true,
+        ),
+      ),
+    );
+
+    await _refreshAfterChat();
+  }
+
   void _openNewDm() {
     debugPrint('CHAT LIST: open new DM sheet');
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -70,10 +115,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
           debugPrint(
             'CHAT LIST: resident selected for new DM => ${resident.name} (${resident.unit})',
           );
+
           Navigator.pop(context);
-          final conv = await ChatService.startConversation(resident);
-          if (mounted) {
-            Navigator.push(
+
+          try {
+            final conv = await ChatService.startConversation(resident);
+
+            if (!mounted) return;
+
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ChatScreen(
@@ -84,6 +134,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
               ),
             );
+
+            await _refreshAfterChat();
+          } catch (e) {
+            if (!mounted) return;
+
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(_formatErrorMessage(e))));
           }
         },
       ),
@@ -92,12 +150,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   void _openContactAdmin() {
     debugPrint('CHAT LIST: open Contact Admin sheet');
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _ContactAdminSheet(),
     );
+  }
+
+  String _formatErrorMessage(Object error) {
+    final raw = error.toString().trim();
+
+    if (raw.startsWith('Exception: ')) {
+      return raw.replaceFirst('Exception: ', '');
+    }
+
+    return raw.isEmpty ? 'Something went wrong.' : raw;
   }
 
   @override
@@ -188,6 +257,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             ),
           ),
+
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 100),
@@ -197,20 +267,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                     child: GestureDetector(
-                      onTap: () {
-                        debugPrint('CHAT LIST: open residence group chat');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ChatScreen(
-                              conversationId: 'group_residence',
-                              title: 'Residence Chat',
-                              subtitle: 'All residents',
-                              isGroup: true,
-                            ),
-                          ),
-                        );
-                      },
+                      onTap: _openGroupChat,
                       child: Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -279,6 +336,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     ),
                   ),
+
                   const Padding(
                     padding: EdgeInsets.fromLTRB(20, 28, 20, 12),
                     child: Text(
@@ -291,6 +349,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     ),
                   ),
+
                   if (_loading)
                     const Center(
                       child: Padding(
@@ -324,15 +383,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Column(
-                          children: _conversations.asMap().entries.map((e) {
-                            final conv = e.value;
+                          children: _conversations.map((conv) {
                             return ConversationTile(
                               conversation: conv,
-                              onTap: () {
+                              onTap: () async {
                                 debugPrint(
                                   'CHAT LIST: open DM => id=${conv.id}, title=${conv.otherUserName}',
                                 );
-                                Navigator.push(
+
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => ChatScreen(
@@ -343,6 +402,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                     ),
                                   ),
                                 );
+
+                                await _refreshAfterChat();
                               },
                             );
                           }).toList(),
@@ -371,11 +432,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 color: _C.gold.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
-                Icons.chat_outlined,
-                color: _C.gold,
-                size: 28,
-              ),
+              child: const Icon(Icons.chat_outlined, color: _C.gold, size: 28),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -435,6 +492,7 @@ class _NewDmSheetState extends State<_NewDmSheet> {
     try {
       final residents = await ChatService.fetchResidents();
       debugPrint('NEW DM SHEET: residents loaded => count=${residents.length}');
+
       if (mounted) {
         setState(() {
           _all = residents;
@@ -445,16 +503,16 @@ class _NewDmSheetState extends State<_NewDmSheet> {
     } catch (e, st) {
       debugPrint('NEW DM SHEET: load failed => $e');
       debugPrint('$st');
+
       if (mounted) {
-        setState(() {
-          _loading = false;
-        });
+        setState(() => _loading = false);
       }
     }
   }
 
   void _filter() {
     final q = _searchCtrl.text.toLowerCase();
+
     setState(() {
       _filtered = _all.where((r) {
         return r.name.toLowerCase().contains(q) ||
@@ -471,6 +529,7 @@ class _NewDmSheetState extends State<_NewDmSheet> {
       Color(0xFF7B5EA7),
       Color(0xFF2A5240),
     ];
+
     return colors[name.codeUnits.fold(0, (a, b) => a + b) % colors.length];
   }
 
@@ -519,23 +578,14 @@ class _NewDmSheetState extends State<_NewDmSheet> {
               decoration: BoxDecoration(
                 color: _C.pageBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _C.gold.withOpacity(0.25),
-                  width: 1,
-                ),
+                border: Border.all(color: _C.gold.withOpacity(0.25), width: 1),
               ),
               child: TextField(
                 controller: _searchCtrl,
-                style: const TextStyle(
-                  color: _C.textDark,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: _C.textDark, fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search by name or unit…',
-                  hintStyle: TextStyle(
-                    color: _C.textGray,
-                    fontSize: 14,
-                  ),
+                  hintStyle: TextStyle(color: _C.textGray, fontSize: 14),
                   prefixIcon: Icon(
                     Icons.search_rounded,
                     color: _C.textGray,
@@ -560,93 +610,93 @@ class _NewDmSheetState extends State<_NewDmSheet> {
                     ),
                   )
                 : _filtered.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No residents found',
-                          style: TextStyle(color: _C.textGray),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 4,
-                        ),
-                        itemCount: _filtered.length,
-                        itemBuilder: (_, i) {
-                          final r = _filtered[i];
-                          final color = _avatarColor(r.name);
-                          return GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              debugPrint(
-                                'NEW DM SHEET: tapped resident => ${r.name} (${r.unit})',
-                              );
-                              widget.onSelectResident(r);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: BoxDecoration(
-                                color: _C.pageBg,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: _C.gold.withOpacity(0.12),
-                                  width: 1,
+                ? const Center(
+                    child: Text(
+                      'No residents found',
+                      style: TextStyle(color: _C.textGray),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 4,
+                    ),
+                    itemCount: _filtered.length,
+                    itemBuilder: (_, i) {
+                      final r = _filtered[i];
+                      final color = _avatarColor(r.name);
+
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          debugPrint(
+                            'NEW DM SHEET: tapped resident => ${r.name} (${r.unit})',
+                          );
+                          widget.onSelectResident(r);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: _C.pageBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _C.gold.withOpacity(0.12),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: color.withOpacity(0.15),
+                                child: Text(
+                                  r.initials,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: color.withOpacity(0.15),
-                                    child: Text(
-                                      r.initials,
-                                      style: TextStyle(
-                                        color: color,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      r.name,
+                                      style: const TextStyle(
+                                        color: _C.textDark,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          r.name,
-                                          style: const TextStyle(
-                                            color: _C.textDark,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          r.unit,
-                                          style: const TextStyle(
-                                            color: _C.gold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      r.unit,
+                                      style: const TextStyle(
+                                        color: _C.gold,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: _C.textGray,
-                                    size: 14,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: _C.textGray,
+                                size: 14,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -664,6 +714,7 @@ class _ContactAdminSheet extends StatefulWidget {
 class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   final _subjectCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
+
   String _urgency = 'Low';
   bool _submitting = false;
   bool _submitted = false;
@@ -676,17 +727,10 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   }
 
   Future<void> _submit() async {
-    debugPrint('CONTACT ADMIN: submit tapped');
-
     final subject = _subjectCtrl.text.trim();
     final message = _messageCtrl.text.trim();
 
-    debugPrint('CONTACT ADMIN: subject="$subject"');
-    debugPrint('CONTACT ADMIN: messageLength=${message.length}');
-    debugPrint('CONTACT ADMIN: urgency="$_urgency"');
-
     if (subject.isEmpty || message.isEmpty) {
-      debugPrint('CONTACT ADMIN: blocked by validation');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in both subject and message.'),
@@ -697,7 +741,6 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
 
     HapticFeedback.lightImpact();
     setState(() => _submitting = true);
-    debugPrint('CONTACT ADMIN: calling ContactAdminService.sendRequest()');
 
     try {
       await ContactAdminService.sendRequest(
@@ -706,27 +749,20 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
         urgency: _urgency.toLowerCase(),
       );
 
-      debugPrint('CONTACT ADMIN: service call succeeded');
-
       if (!mounted) return;
 
       setState(() {
         _submitting = false;
         _submitted = true;
       });
-    } catch (e, st) {
-      debugPrint('CONTACT ADMIN: service call failed => $e');
-      debugPrint('$st');
-
+    } catch (e) {
       if (!mounted) return;
 
       setState(() => _submitting = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_formatErrorMessage(e)),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_formatErrorMessage(e))));
     }
   }
 
@@ -749,6 +785,7 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       decoration: BoxDecoration(
@@ -763,219 +800,216 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   }
 
   Widget _successState() => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: _C.low.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.check_rounded, color: _C.low, size: 32),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: _C.low.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Icon(Icons.check_rounded, color: _C.low, size: 32),
+      ),
+      const SizedBox(height: 16),
+      const Text(
+        'Message sent!',
+        style: TextStyle(
+          color: _C.textDark,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'The admin will get back to you soon.',
+        style: TextStyle(color: _C.textGray, fontSize: 14),
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Container(
+          width: double.infinity,
+          height: 50,
+          decoration: BoxDecoration(
+            color: _C.forest,
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Message sent!',
+          alignment: Alignment.center,
+          child: const Text(
+            'Done',
             style: TextStyle(
-              color: _C.textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              color: _C.champagne,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'The admin will get back to you soon.',
-            style: TextStyle(color: _C.textGray, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _C.forest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  color: _C.champagne,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   Widget _formState() => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Center(
+        child: Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: _C.textGray.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+      Row(
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: _C.textGray.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _C.forest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.admin_panel_settings_rounded,
+              color: _C.champagne,
+              size: 20,
             ),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _C.forest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: _C.champagne,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Contact Admin',
-                    style: TextStyle(
-                      color: _C.textDark,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    'We\'ll get back to you as soon as possible',
-                    style: TextStyle(color: _C.textGray, fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Urgency level',
-            style: TextStyle(
-              color: _C.textDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: ['Low', 'Medium', 'Urgent'].map((level) {
-              final selected = _urgency == level;
-              final color = _urgencyColor(level);
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    debugPrint('CONTACT ADMIN: urgency selected => $level');
-                    setState(() => _urgency = level);
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: selected ? color.withOpacity(0.12) : _C.pageBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected
-                            ? color
-                            : _C.textGray.withOpacity(0.2),
-                        width: selected ? 1.5 : 1,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      level,
-                      style: TextStyle(
-                        color: selected ? color : _C.textGray,
-                        fontSize: 13,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w400,
-                      ),
-                    ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Contact Admin',
+                  style: TextStyle(
+                    color: _C.textDark,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Subject',
-            style: TextStyle(
-              color: _C.textDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _inputField(
-            controller: _subjectCtrl,
-            hint: 'e.g. Noise complaint, Maintenance issue…',
-            maxLines: 1,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Message',
-            style: TextStyle(
-              color: _C.textDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _inputField(
-            controller: _messageCtrl,
-            hint: 'Describe your issue in detail…',
-            maxLines: 5,
-          ),
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: _submitting ? null : _submit,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                color: _submitting
-                    ? _C.forest.withOpacity(0.5)
-                    : _C.forest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              alignment: Alignment.center,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: _C.champagne,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      'Send to Admin',
-                      style: TextStyle(
-                        color: _C.champagne,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                Text(
+                  'We\'ll get back to you as soon as possible',
+                  style: TextStyle(color: _C.textGray, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ],
-      );
+      ),
+      const SizedBox(height: 24),
+      const Text(
+        'Urgency level',
+        style: TextStyle(
+          color: _C.textDark,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        children: ['Low', 'Medium', 'Urgent'].map((level) {
+          final selected = _urgency == level;
+          final color = _urgencyColor(level);
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _urgency = level);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected ? color.withOpacity(0.12) : _C.pageBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? color : _C.textGray.withOpacity(0.2),
+                    width: selected ? 1.5 : 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  level,
+                  style: TextStyle(
+                    color: selected ? color : _C.textGray,
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 20),
+      const Text(
+        'Subject',
+        style: TextStyle(
+          color: _C.textDark,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      _inputField(
+        controller: _subjectCtrl,
+        hint: 'e.g. Noise complaint, Maintenance issue…',
+        maxLines: 1,
+      ),
+      const SizedBox(height: 16),
+      const Text(
+        'Message',
+        style: TextStyle(
+          color: _C.textDark,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      _inputField(
+        controller: _messageCtrl,
+        hint: 'Describe your issue in detail…',
+        maxLines: 5,
+      ),
+      const SizedBox(height: 24),
+      GestureDetector(
+        onTap: _submitting ? null : _submit,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          height: 52,
+          decoration: BoxDecoration(
+            color: _submitting ? _C.forest.withOpacity(0.5) : _C.forest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: _submitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: _C.champagne,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Text(
+                  'Send to Admin',
+                  style: TextStyle(
+                    color: _C.champagne,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+        ),
+      ),
+    ],
+  );
 
   Widget _inputField({
     required TextEditingController controller,
@@ -986,25 +1020,15 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
       decoration: BoxDecoration(
         color: _C.pageBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: _C.gold.withOpacity(0.25),
-          width: 1,
-        ),
+        border: Border.all(color: _C.gold.withOpacity(0.25), width: 1),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(
-          color: _C.textDark,
-          fontSize: 14,
-          height: 1.5,
-        ),
+        style: const TextStyle(color: _C.textDark, fontSize: 14, height: 1.5),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(
-            color: _C.textGray,
-            fontSize: 14,
-          ),
+          hintStyle: const TextStyle(color: _C.textGray, fontSize: 14),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
