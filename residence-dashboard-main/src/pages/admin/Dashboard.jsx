@@ -9,6 +9,10 @@ import {
   assignTechnicianToMaintenance,
 } from "../../services/maintenanceService";
 import { getAlerts } from "../../services/alertService";
+import {
+  getAllVisitorRequests,
+  getVisitorAccessLogs,
+} from "../../services/visitorRequestsService";
 
 const mockStats = {
   totalResidents: 120,
@@ -81,7 +85,10 @@ const Dashboard = () => {
   const [maintenance, setMaintenance] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
-  const [visitors] = useState(mockVisitors);
+  const [visitorRequests, setVisitorRequests] = useState([]);
+  const [accessLogs, setAccessLogs] = useState([]);
+  const [loadingVisitors, setLoadingVisitors] = useState(true);
+  const [loadingLogs, setLoadingLogs] = useState(true);
   const [consumption] = useState(mockConsumption);
 
   const [loadingMaintenance, setLoadingMaintenance] = useState(true);
@@ -163,10 +170,57 @@ const Dashboard = () => {
 };
 
   useEffect(() => {
-    loadMaintenance();
-    loadAlerts();
-  }, []);
+  loadMaintenance();
+  loadAlerts();
+  loadVisitorRequests();
+  loadAccessLogs();
+}, []);
+const loadVisitorRequests = async () => {
+  try {
+    setLoadingVisitors(true);
 
+   const data = await getAllVisitorRequests();
+
+    const pending = Array.isArray(data)
+      ? data.filter((v) => v.status === "PENDING").slice(0, 5)
+      : [];
+
+    setVisitorRequests(pending);
+  } catch (error) {
+    console.error("Failed to load visitors:", error);
+    setVisitorRequests([]);
+  } finally {
+    setLoadingVisitors(false);
+  }
+};
+
+const loadAccessLogs = async () => {
+  try {
+    setLoadingLogs(true);
+
+    const data = await getVisitorAccessLogs();
+
+    const normalized = Array.isArray(data)
+      ? data.slice(0, 5).map((log) => ({
+          id: log.id,
+          name: log.visitor_name || "Visitor",
+          unit: `Unit ${log.unit_number || "-"}`,
+          status: log.status,
+          time: new Date(log.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }))
+      : [];
+
+    setAccessLogs(normalized);
+  } catch (error) {
+    console.error("Failed to load logs:", error);
+    setAccessLogs([]);
+  } finally {
+    setLoadingLogs(false);
+  }
+};
   const openMaintenanceDetails = async (id) => {
     try {
       setLoadingRequestDetails(true);
@@ -324,44 +378,24 @@ const Dashboard = () => {
                 <span className="dash-card-more">View all</span>
               </div>
 
-              {accessLog.map((item) => (
-                <div key={item.id} className="dash-log-item">
-                  <div className={`dash-log-icon ${item.type}`}>
-                    {item.type === "alert" ? (
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#e74c3c"
-                        strokeWidth="2"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#1D9E75"
-                        strokeWidth="2"
-                      >
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      </svg>
-                    )}
-                  </div>
+              {loadingLogs ? (
+  <div className="dash-empty">Loading logs...</div>
+) : accessLogs.length === 0 ? (
+  <div className="dash-empty">No activity</div>
+) : (
+  accessLogs.map((item) => (
+    <div key={item.id} className="dash-log-item">
+      <div className="dash-log-info">
+        <span className="dash-log-name">{item.name}</span>
+        <span className="dash-log-unit">
+          {item.unit} · {item.status}
+        </span>
+      </div>
 
-                  <div className="dash-log-info">
-                    <span className="dash-log-name">{item.name}</span>
-                    <span className="dash-log-unit">{item.unit}</span>
-                  </div>
-
-                  <span className="dash-log-time">{item.time}</span>
-                </div>
-              ))}
+      <span className="dash-log-time">{item.time}</span>
+    </div>
+  ))
+)}
             </div>
 
             <div className="dash-card">
@@ -464,14 +498,28 @@ const Dashboard = () => {
 
           <div className="dash-rp-section">
             <div className="dash-rp-title">Pending visitors</div>
+          {loadingVisitors ? (
+  <div className="dash-empty">Loading visitors...</div>
+) : visitorRequests.length === 0 ? (
+  <div className="dash-empty">No pending visitors</div>
+) : (
+  visitorRequests.map((v) => (
+    <div key={v.id} className="dash-rp-visitor">
+      <div className="dash-rp-avatar">
+        {v.visitor_name?.slice(0, 2).toUpperCase()}
+      </div>
 
-            {visitors.map((v) => (
-              <div key={v.id} className="dash-rp-visitor">
-                <div className="dash-rp-avatar">{v.initials}</div>
-                <span className="dash-rp-vname">{v.name}</span>
-                <span className="dash-rp-vbadge">Pending</span>
-              </div>
-            ))}
+      <span className="dash-rp-vname">
+        {v.visitor_name}
+      </span>
+
+      <span className={`dash-rp-vbadge ${v.status}`}>
+        {v.status}
+      </span>
+    </div>
+  ))
+)}
+           
           </div>
         </div>
       </div>

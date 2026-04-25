@@ -47,3 +47,18 @@ export const markVisitorExited = async (id) => {
   const res = await axiosInstance.patch(`/visitor-requests/${id}/exited`);
   return res.data;
 };
+
+
+// -----------------------------
+// Admin
+// -----------------------------
+
+export const getVisitorRequests = async () => {
+  const response = await axiosInstance.get("/visitor-requests");
+  return response.data;
+};
+
+export const getVisitorAccessLogs = async () => {
+  const response = await axiosInstance.get("/admin/visitor-access/logs");
+  return response.data;
+};

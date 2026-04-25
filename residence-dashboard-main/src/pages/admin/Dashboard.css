@@ -469,3 +469,28 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dash-rp-vbadge.PENDING {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+}
+
+.dash-rp-vbadge.APPROVED {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+}
+
+.dash-rp-vbadge.REJECTED {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+}
+
+.dash-rp-vbadge.ARRIVED {
+  background: rgba(26, 188, 156, 0.15);
+  color: #1abc9c;
+}
+
+.dash-rp-vbadge.EXITED {
+  background: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+}
