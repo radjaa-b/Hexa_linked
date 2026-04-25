@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -5,6 +8,7 @@ import 'package:resident_app/features/chat/models/message.dart';
 import 'package:resident_app/features/chat/services/chat_service.dart';
 import 'package:resident_app/features/chat/widgets/message_bubble.dart';
 import 'package:resident_app/features/chat/widgets/chat_input_bar.dart';
+import 'package:resident_app/features/auth/services/auth_service.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  CHAT SCREEN
@@ -32,6 +36,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _scrollCtrl = ScrollController();
+  WebSocket? _socket;
+
   List<Message> _messages = [];
   bool _loading = true;
 
@@ -39,10 +45,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _load();
+    _connectWebSocket();
   }
 
   @override
   void dispose() {
+    _socket?.close();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -60,19 +68,63 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _scrollToBottom({bool animated = true}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollCtrl.hasClients) return;
-      if (animated) {
-        _scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      } else {
-        _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
-      }
-    });
+  Future<void> _connectWebSocket() async {
+    final token = await AuthService.getToken();
+
+    if (token == null || token.isEmpty) {
+      debugPrint('❌ WebSocket token missing');
+      return;
+    }
+
+    final baseUrl = AuthService.baseUrl;
+    final wsBaseUrl = baseUrl
+        .replaceFirst('http://', 'ws://')
+        .replaceFirst('https://', 'wss://');
+
+    final wsUrl =
+        '$wsBaseUrl/chat/conversations/${widget.conversationId}/ws?token=$token';
+
+    debugPrint('🔌 Connecting WebSocket: $wsUrl');
+
+    try {
+      _socket = await WebSocket.connect(wsUrl);
+
+      _socket!.listen(
+        (data) {
+          final jsonData = jsonDecode(data);
+
+          final senderId = jsonData['sender_id'].toString();
+          final isMe = senderId == ChatService.currentUserId;
+
+          final msg = Message(
+            id: jsonData['id'].toString(),
+            senderId: senderId,
+            senderName: isMe ? ChatService.currentUserName : widget.title,
+            senderUnit: isMe ? ChatService.currentUserUnit : widget.subtitle,
+            content: jsonData['content'].toString(),
+            type: MessageType.text,
+            sentAt: DateTime.parse(jsonData['created_at']),
+            isMe: isMe,
+          );
+
+          if (!mounted) return;
+
+          setState(() {
+            _messages.add(msg);
+          });
+
+          _scrollToBottom();
+        },
+        onError: (error) {
+          debugPrint('❌ WebSocket error: $error');
+        },
+        onDone: () {
+          debugPrint('🔌 WebSocket closed');
+        },
+      );
+    } catch (e) {
+      debugPrint('❌ WebSocket connection failed: $e');
+    }
   }
 
   // ── Send text ─────────────────────────────────────────────────
@@ -82,25 +134,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     HapticFeedback.lightImpact();
 
-    final tempMessage = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: ChatService.currentUserId,
-      senderName: ChatService.currentUserName,
-      senderUnit: ChatService.currentUserUnit,
-      content: trimmed,
-      type: MessageType.text,
-      sentAt: DateTime.now(),
-      isMe: true,
-    );
-
-    setState(() {
-      _messages.add(tempMessage);
-    });
-
-    _scrollToBottom();
-
     try {
-      await ChatService.sendMessage(widget.conversationId, trimmed);
+      _socket?.add(jsonEncode({"content": trimmed}));
     } catch (e) {
       if (!mounted) return;
 
