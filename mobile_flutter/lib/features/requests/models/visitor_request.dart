@@ -43,13 +43,22 @@ class VisitorRequest {
   };
 
   factory VisitorRequest.fromJson(Map<String, dynamic> json) {
+    final rawDate = json['visit_date']?.toString();
+
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(rawDate ?? '');
+    } catch (_) {
+      parsedDate = DateTime.now();
+    }
+
     return VisitorRequest(
       id: json['id']?.toString(),
       visitorName: json['visitor_name'] ?? '',
       visitorPhone: json['visitor_phone'] ?? '',
       visitorEmail: json['visitor_email'] ?? '',
       purpose: json['purpose'] ?? '',
-      visitDate: DateTime.parse(json['visit_date']),
+      visitDate: parsedDate,
       startTime: json['start_time'] ?? '',
       endTime: json['end_time'] ?? '',
       note: json['note'],

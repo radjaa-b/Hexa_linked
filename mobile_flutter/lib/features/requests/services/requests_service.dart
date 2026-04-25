@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/maintenance_request.dart';
 import '../models/visitor_request.dart';
 import '../models/booking_request.dart';
 import '../models/parking_spot.dart';
+import 'package:flutter/foundation.dart';
 
 //   HEY RADJA  zwina  rabi m3ak   — READ THIS FIRST
 
@@ -103,6 +105,9 @@ class RequestsService {
       Uri.parse('$_baseUrl/visitor-requests/my'),
       headers: _headers(token: token),
     );
+
+    debugPrint('VISITOR GET STATUS: ${response.statusCode}');
+    debugPrint('VISITOR GET BODY: ${response.body}');
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);

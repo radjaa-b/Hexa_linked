@@ -8,6 +8,7 @@ import 'parking_screen.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
 import '../services/requests_service.dart';
 import '../models/maintenance_request.dart';
+import '../models/visitor_request.dart';
 
 class RequestsHubScreen extends StatelessWidget {
   const RequestsHubScreen({super.key});
@@ -22,7 +23,6 @@ class RequestsHubScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── App bar / Header ─────────────────────────────
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 decoration: const BoxDecoration(
@@ -40,10 +40,6 @@ class RequestsHubScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.parchment.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(13),
-                        border: Border.all(
-                          color: AppColors.gold.withOpacity(0.30),
-                          width: 1,
-                        ),
                       ),
                       child: const Icon(
                         Icons.assignment_rounded,
@@ -78,19 +74,14 @@ class RequestsHubScreen extends StatelessWidget {
                 ),
               ),
 
-              // ── Body ─────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 4),
-
                     RequestHubCard(
                       icon: Icons.build_outlined,
                       title: 'Maintenance Request',
-                      subtitle:
-                          'Report an issue or request a repair in your unit or common areas.',
+                      subtitle: 'Report an issue or request a repair.',
                       accentColor: AppColors.gold,
                       onTap: () => Navigator.push(
                         context,
@@ -104,23 +95,30 @@ class RequestsHubScreen extends StatelessWidget {
                     RequestHubCard(
                       icon: Icons.badge_outlined,
                       title: 'Visitor Pass',
-                      subtitle:
-                          'Register an expected visitor and generate a one-time entry pass.',
+                      subtitle: 'Register a visitor.',
                       accentColor: AppColors.teal,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const VisitorScreen(),
-                        ),
-                      ),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const VisitorScreen(),
+                          ),
+                        );
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RequestsHubScreen(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 14),
 
                     RequestHubCard(
                       icon: Icons.meeting_room_outlined,
                       title: 'Book Shared Area',
-                      subtitle:
-                          'Reserve the gym, pool, rooftop, or other shared facilities.',
+                      subtitle: 'Reserve shared spaces.',
                       accentColor: AppColors.darkGreen,
                       onTap: () => Navigator.push(
                         context,
@@ -134,8 +132,7 @@ class RequestsHubScreen extends StatelessWidget {
                     RequestHubCard(
                       icon: Icons.local_parking_rounded,
                       title: 'Parking Lot',
-                      subtitle:
-                          'Check available and occupied parking spots in the residence.',
+                      subtitle: 'Check parking spots.',
                       accentColor: AppColors.teal,
                       onTap: () => Navigator.push(
                         context,
@@ -144,17 +141,21 @@ class RequestsHubScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 28),
 
-                    // ── Activity Overview ─────────────────────
-                    const Text(
-                      'Activity Overview',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.darkGreen,
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Activity Overview',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.darkGreen,
+                        ),
                       ),
                     ),
+
                     const SizedBox(height: 12),
 
                     const _ActivityCard(),
@@ -180,6 +181,12 @@ class _ActivityCardState extends State<_ActivityCard> {
   int _openRequests = 0;
   bool _loading = true;
 
+  bool _showVisitors = false;
+  bool _showOpenRequests = false;
+
+  List<VisitorRequest> _visitorRequests = [];
+  List<MaintenanceRequest> _maintenanceRequests = [];
+
   @override
   void initState() {
     super.initState();
@@ -191,78 +198,249 @@ class _ActivityCardState extends State<_ActivityCard> {
       final session = await AuthService.getStoredSession(
         requiredRole: 'resident',
       );
-      if (session == null) return;
 
-      final requests = await RequestsService().getMaintenanceRequests(
-        token: session.accessToken,
-      );
+      if (session == null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
 
-      final open = requests
-          .where((r) => r.status == 'pending' || r.status == 'in_progress')
-          .length;
+      try {
+        final maintenance = await RequestsService().getMaintenanceRequests(
+          token: session.accessToken,
+        );
 
-      if (mounted) setState(() => _openRequests = open);
-    } catch (_) {
-      // fail silently — keep showing 0
+        final open = maintenance
+            .where(
+              (r) =>
+                  r.status.toLowerCase() == 'pending' ||
+                  r.status.toLowerCase() == 'in_progress',
+            )
+            .length;
+
+        if (mounted) {
+          setState(() {
+            _openRequests = open;
+            _maintenanceRequests = maintenance;
+          });
+        }
+      } catch (e) {
+        debugPrint('Maintenance load failed: $e');
+      }
+
+      try {
+        final visitors = await RequestsService().getMyVisitorRequests(
+          token: session.accessToken,
+        );
+
+        if (mounted) {
+          setState(() {
+            _visitorRequests = visitors;
+          });
+        }
+      } catch (e) {
+        debugPrint('Visitor requests load failed: $e');
+      }
+    } catch (e) {
+      debugPrint('Activity overview load failed: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    const int bookings = 2;
-    const int bookingsMax = 5;
-    const int requestsMax = 10;
-    const int visitors = 3;
-    const int visitorsMax = 6;
+  Color _statusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'APPROVED':
+        return Colors.green;
+      case 'REJECTED':
+        return Colors.red;
+      case 'PENDING':
+        return Colors.orange;
+      case 'ARRIVED':
+        return AppColors.teal;
+      case 'EXITED':
+      case 'CANCELLED':
+      case 'EXPIRED':
+        return Colors.grey;
+      default:
+        return AppColors.darkGreen;
+    }
+  }
 
+  Widget _miniRequestCard({
+    required String title,
+    required String subtitle,
+    required String status,
+  }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.gold.withOpacity(0.15), width: 1),
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.gold.withOpacity(0.14)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _ActivityStatRow(
-            icon: Icons.calendar_month_rounded,
-            label: 'Active Bookings',
-            value: bookings,
-            max: bookingsMax,
-            color: AppColors.gold,
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.darkGreen,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
           ),
-          const SizedBox(height: 18),
-          _loading
-              ? const SizedBox(
-                  height: 42,
-                  child: Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              : _ActivityStatRow(
-                  icon: Icons.assignment_outlined,
-                  label: 'Open Requests',
-                  value: _openRequests,
-                  max: requestsMax,
-                  color: const Color(0xFF5B9BD5),
-                ),
-          const SizedBox(height: 18),
-          const _ActivityStatRow(
-            icon: Icons.people_outline_rounded,
-            label: 'Visitor Passes',
-            value: visitors,
-            max: visitorsMax,
-            color: AppColors.teal,
+          const SizedBox(height: 5),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: AppColors.mutedGreen,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _statusColor(status).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              status.toUpperCase(),
+              style: TextStyle(
+                color: _statusColor(status),
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.gold,
+          ),
+        ),
+      );
+    }
+
+    final openMaintenance = _maintenanceRequests
+        .where(
+          (r) =>
+              r.status.toLowerCase() == 'pending' ||
+              r.status.toLowerCase() == 'in_progress',
+        )
+        .toList();
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+          ),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() => _showVisitors = !_showVisitors);
+                },
+                child: _ActivityStatRow(
+                  icon: Icons.badge_outlined,
+                  label: 'Visitor Passes',
+                  value: _visitorRequests.length,
+                  max: 10,
+                  color: AppColors.teal,
+                ),
+              ),
+              if (_showVisitors) ...[
+                const SizedBox(height: 8),
+                if (_visitorRequests.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text(
+                      'No visitor requests yet',
+                      style: TextStyle(color: AppColors.mutedGreen),
+                    ),
+                  ),
+                ..._visitorRequests.map(
+                  (v) => _miniRequestCard(
+                    title: v.visitorName,
+                    subtitle: '${v.purpose} • ${v.startTime} - ${v.endTime}',
+                    status: v.status,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+          ),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() => _showOpenRequests = !_showOpenRequests);
+                },
+                child: _ActivityStatRow(
+                  icon: Icons.assignment_outlined,
+                  label: 'Open Requests',
+                  value: _openRequests,
+                  max: 10,
+                  color: AppColors.gold,
+                ),
+              ),
+              if (_showOpenRequests) ...[
+                const SizedBox(height: 8),
+                if (openMaintenance.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text(
+                      'No open maintenance requests',
+                      style: TextStyle(color: AppColors.mutedGreen),
+                    ),
+                  ),
+                ...openMaintenance.map(
+                  (r) => _miniRequestCard(
+                    title: 'Maintenance Request',
+                    subtitle: r.category,
+                    status: r.status,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -284,7 +462,7 @@ class _ActivityStatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double progress = value / max;
+    final double progress = max == 0 ? 0 : (value / max).clamp(0.0, 1.0);
 
     return Column(
       children: [
@@ -306,7 +484,7 @@ class _ActivityStatRow extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.darkGreen,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -315,14 +493,14 @@ class _ActivityStatRow extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 6,
