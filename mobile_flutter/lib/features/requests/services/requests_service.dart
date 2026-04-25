@@ -96,18 +96,19 @@ class RequestsService {
   // RADJA: Called to list all visitor passes for a unit.
   //
   // Expected response body (JSON) — array of records (same shape as above).
-  Future<List<VisitorRequest>> getVisitorRequests({
-    String? token,
-    String? unitNumber,
+  Future<List<VisitorRequest>> getMyVisitorRequests({
+    required String token,
   }) async {
-    final uri = Uri.parse('$_baseUrl/visitor-requests').replace(
-      queryParameters: {if (unitNumber != null) 'unit_number': unitNumber},
+    final response = await http.get(
+      Uri.parse('$_baseUrl/visitor-requests/my'),
+      headers: _headers(token: token),
     );
-    final response = await http.get(uri, headers: _headers(token: token));
+
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => VisitorRequest.fromJson(e)).toList();
     }
+
     throw Exception('Failed to fetch visitor requests: ${response.body}');
   }
 

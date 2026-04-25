@@ -4,18 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:resident_app/features/auth/services/auth_service.dart';
 import 'package:resident_app/features/chat/models/message.dart';
 import 'package:resident_app/features/chat/services/chat_service.dart';
-import 'package:resident_app/features/chat/widgets/message_bubble.dart';
 import 'package:resident_app/features/chat/widgets/chat_input_bar.dart';
-import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/features/chat/widgets/message_bubble.dart';
 
-// ─────────────────────────────────────────────────────────────
-//  CHAT SCREEN
-//  Works for both group chat and private DMs.
-//  Pass isGroup: true for the group chat room.
-//  Pass isGroup: false for a private DM conversation.
-// ─────────────────────────────────────────────────────────────
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
@@ -55,17 +49,17 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  // ── Load ──────────────────────────────────────────────────────
   Future<void> _load() async {
     final msgs = await ChatService.fetchMessages(widget.conversationId);
 
-    if (mounted) {
-      setState(() {
-        _messages = msgs;
-        _loading = false;
-      });
-      _scrollToBottom(animated: false);
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _messages = msgs;
+      _loading = false;
+    });
+
+    _scrollToBottom(animated: false);
   }
 
   Future<void> _connectWebSocket() async {
@@ -127,7 +121,22 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ── Send text ─────────────────────────────────────────────────
+  void _scrollToBottom({bool animated = true}) {
+    if (!_scrollCtrl.hasClients) return;
+
+    final maxScroll = _scrollCtrl.position.maxScrollExtent;
+
+    if (animated) {
+      _scrollCtrl.animateTo(
+        maxScroll,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } else {
+      _scrollCtrl.jumpTo(maxScroll);
+    }
+  }
+
   Future<void> _onSendText(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
@@ -145,9 +154,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ── Send image ────────────────────────────────────────────────
   void _onSendImage(String path) {
     HapticFeedback.lightImpact();
+
     setState(() {
       _messages.add(
         Message(
@@ -162,16 +171,16 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       );
     });
-    _scrollToBottom();
 
+    _scrollToBottom();
     ChatService.sendImage(path);
   }
 
-  // ── Date separator ────────────────────────────────────────────
   Widget _dateSeparator(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final msgDay = DateTime(date.year, date.month, date.day);
+
     const months = [
       'Jan',
       'Feb',
@@ -238,14 +247,18 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Widget> _buildList() {
     final items = <Widget>[];
     DateTime? last;
+
     for (final msg in _messages) {
       final day = DateTime(msg.sentAt.year, msg.sentAt.month, msg.sentAt.day);
+
       if (last == null || day != last) {
         items.add(_dateSeparator(msg.sentAt));
         last = day;
       }
+
       items.add(MessageBubble(message: msg));
     }
+
     return items;
   }
 
@@ -255,7 +268,6 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: const Color(0xFFF5F0E8),
       body: Column(
         children: [
-          // ── App bar ────────────────────────────────────────
           Container(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 12,
@@ -272,7 +284,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: [
-                // Back
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
@@ -290,8 +301,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-
-                // Icon
                 Container(
                   width: 40,
                   height: 40,
@@ -312,8 +321,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-
-                // Title + subtitle
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,8 +346,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-
-          // ── Messages ───────────────────────────────────────
           Expanded(
             child: _loading
                 ? const Center(
@@ -357,8 +362,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: _buildList(),
                   ),
           ),
-
-          // ── Input ──────────────────────────────────────────
           ChatInputBar(onSendText: _onSendText, onSendImage: _onSendImage),
         ],
       ),
