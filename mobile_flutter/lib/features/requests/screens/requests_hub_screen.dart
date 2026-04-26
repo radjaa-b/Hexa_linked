@@ -9,6 +9,7 @@ import 'package:resident_app/features/auth/services/auth_service.dart';
 import '../services/requests_service.dart';
 import '../models/maintenance_request.dart';
 import '../models/visitor_request.dart';
+import '../models/booking_request.dart';
 
 class RequestsHubScreen extends StatelessWidget {
   const RequestsHubScreen({super.key});
@@ -184,6 +185,9 @@ class _ActivityCardState extends State<_ActivityCard> {
   bool _showVisitors = false;
   bool _showOpenRequests = false;
 
+  bool _showBookings = false;
+  List<BookingRequest> _bookingRequests = [];
+
   List<VisitorRequest> _visitorRequests = [];
   List<MaintenanceRequest> _maintenanceRequests = [];
 
@@ -239,6 +243,20 @@ class _ActivityCardState extends State<_ActivityCard> {
         }
       } catch (e) {
         debugPrint('Visitor requests load failed: $e');
+      }
+
+      try {
+        final bookings = await RequestsService().getMyBookingRequests(
+          token: session.accessToken,
+        );
+
+        if (mounted) {
+          setState(() {
+            _bookingRequests = bookings;
+          });
+        }
+      } catch (e) {
+        debugPrint('Booking requests load failed: $e');
       }
     } catch (e) {
       debugPrint('Activity overview load failed: $e');
@@ -388,6 +406,53 @@ class _ActivityCardState extends State<_ActivityCard> {
                     title: v.visitorName,
                     subtitle: '${v.purpose} • ${v.startTime} - ${v.endTime}',
                     status: v.status,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.gold.withOpacity(0.15)),
+          ),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() => _showBookings = !_showBookings);
+                },
+                child: _ActivityStatRow(
+                  icon: Icons.meeting_room_outlined,
+                  label: 'Shared Area Bookings',
+                  value: _bookingRequests.length,
+                  max: 2,
+                  color: AppColors.darkGreen,
+                ),
+              ),
+              if (_showBookings) ...[
+                const SizedBox(height: 8),
+                if (_bookingRequests.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text(
+                      'No shared area bookings yet',
+                      style: TextStyle(color: AppColors.mutedGreen),
+                    ),
+                  ),
+                ..._bookingRequests.map(
+                  (b) => _miniRequestCard(
+                    title: b.areaName,
+                    subtitle:
+                        '${b.unitNumber} • ${b.startTime} - ${b.endTime} • ${b.guestCount} guests',
+                    status: b.status,
                   ),
                 ),
               ],
