@@ -8,7 +8,7 @@ import '../models/parking_spot.dart';
 import 'package:flutter/foundation.dart';
 
 class RequestsService {
-  static const String _baseUrl = 'http://192.168.1.4:8000';
+  static const String _baseUrl = 'http://10.25.90.51:8000';
 
   static const bool _useMock = false;
 

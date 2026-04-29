@@ -144,7 +144,19 @@ class _ChatScreenState extends State<ChatScreen> {
     HapticFeedback.lightImpact();
 
     try {
-      _socket?.add(jsonEncode({"content": trimmed}));
+      await ChatService.sendMessage(widget.conversationId, trimmed);
+
+      final updatedMessages = await ChatService.fetchMessages(
+        widget.conversationId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _messages = updatedMessages;
+      });
+
+      _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
 
