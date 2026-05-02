@@ -10,6 +10,10 @@ import {
   getUnreadNotificationCount,
   markNotificationAsRead,
 } from "../../store/notificationStore";
+import {
+  enableSosAlarmSound,
+  playSosAlarmSound,
+} from "../../utils/sosAlarmSound";
 
 import "./Topbar.css";
 
@@ -40,6 +44,24 @@ const navLinks = {
 const canReceiveNotifications = (role) =>
   role === ROLES.ADMIN || role === ROLES.SECURITY;
 
+const isEmergencyNotification = (notification) => {
+  const searchableText = `
+    ${notification.type || ""}
+    ${notification.category || ""}
+    ${notification.title || ""}
+    ${notification.message || ""}
+  `.toLowerCase();
+
+  return (
+    searchableText.includes("sos") ||
+    searchableText.includes("alert") ||
+    searchableText.includes("incident") ||
+    searchableText.includes("emergency") ||
+    searchableText.includes("fire") ||
+    searchableText.includes("gas")
+  );
+};
+
 const Topbar = ({ currentPath }) => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
@@ -47,8 +69,13 @@ const Topbar = ({ currentPath }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [sosSoundEnabled, setSosSoundEnabled] = useState(() => {
+  return localStorage.getItem("sosSoundEnabled") === "true";
+});
 
   const notifRef = useRef(null);
+  const knownNotificationIdsRef = useRef(new Set());
+  const didInitialNotificationLoadRef = useRef(false);
 
   const links = navLinks[role] || [];
 
@@ -62,27 +89,49 @@ const Topbar = ({ currentPath }) => {
     : "??";
 
   const loadNotifications = async () => {
-    if (!canReceiveNotifications(role)) return;
+  if (!canReceiveNotifications(role)) return;
 
-    try {
-      const [notifData, countData] = await Promise.all([
-        getMyNotifications(),
-        getUnreadNotificationCount(),
-      ]);
+  try {
+    const [notifData, countData] = await Promise.all([
+      getMyNotifications(),
+      getUnreadNotificationCount(),
+    ]);
 
-      setNotifications(notifData);
-      setUnreadCount(countData);
-    } catch (error) {
-      console.error("Failed to load notifications:", error);
+    const currentIds = new Set(notifData.map((notif) => String(notif.id)));
+
+    const newUnreadEmergencyNotifications = notifData.filter((notif) => {
+      const notifId = String(notif.id);
+
+      return (
+        !notif.is_read &&
+        isEmergencyNotification(notif) &&
+        !knownNotificationIdsRef.current.has(notifId)
+      );
+    });
+
+    if (didInitialNotificationLoadRef.current) {
+      if (newUnreadEmergencyNotifications.length > 0) {
+        playSosAlarmSound();
+      }
+    } else {
+      didInitialNotificationLoadRef.current = true;
     }
-  };
+
+    knownNotificationIdsRef.current = currentIds;
+
+    setNotifications(notifData);
+    setUnreadCount(countData);
+  } catch (error) {
+    console.error("Failed to load notifications:", error);
+  }
+};
 
   useEffect(() => {
     loadNotifications();
 
     const interval = setInterval(() => {
       loadNotifications();
-    }, 10000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [role]);
@@ -97,6 +146,18 @@ const Topbar = ({ currentPath }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+  if (sosSoundEnabled && canReceiveNotifications(role)) {
+    enableSosAlarmSound();
+  }
+}, [sosSoundEnabled, role]);
+
+  const handleEnableSosSound = () => {
+  enableSosAlarmSound();
+  localStorage.setItem("sosSoundEnabled", "true");
+  setSosSoundEnabled(true);
+};
 
   const handleLogout = () => {
     clearAuth();
@@ -157,6 +218,7 @@ const Topbar = ({ currentPath }) => {
             key={link.path}
             className={`tb-link ${currentPath === link.path ? "active" : ""}`}
             onClick={() => navigate(link.path)}
+            type="button"
           >
             {link.label}
           </button>
@@ -165,69 +227,84 @@ const Topbar = ({ currentPath }) => {
 
       <div className="tb-right">
         {canReceiveNotifications(role) && (
-          <div className="tb-notification-wrapper" ref={notifRef}>
+          <>
             <button
-              className="tb-bell"
-              onClick={() => setIsNotifOpen((prev) => !prev)}
               type="button"
+              onClick={handleEnableSosSound}
+              disabled={sosSoundEnabled}
+              className={`tb-sos-sound-btn ${
+                sosSoundEnabled ? "enabled" : ""
+              }`}
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.75)"
-                strokeWidth="2"
-              >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-
-              {unreadCount > 0 && (
-                <span className="tb-notif-badge">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
+              {sosSoundEnabled ? "🔊 SOS Sound Enabled" : "🔊 Enable SOS Sound"}
             </button>
 
-            {isNotifOpen && (
-              <div className="tb-notif-dropdown">
-                <div className="tb-notif-header">
-                  <span>Notifications</span>
-                  <small>{unreadCount} unread</small>
-                </div>
+            <div className="tb-notification-wrapper" ref={notifRef}>
+              <button
+                className="tb-bell"
+                onClick={() => setIsNotifOpen((prev) => !prev)}
+                type="button"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.75)"
+                  strokeWidth="2"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
 
-                {notifications.length === 0 ? (
-                  <div className="tb-notif-empty">
-                    No emergency notifications.
-                  </div>
-                ) : (
-                  <div className="tb-notif-list">
-                    {notifications.slice(0, 6).map((notification) => (
-                      <button
-                        key={notification.id}
-                        className={`tb-notif-item ${
-                          !notification.is_read ? "unread" : ""
-                        }`}
-                        onClick={() => handleNotificationClick(notification)}
-                        type="button"
-                      >
-                        <div className="tb-notif-icon">🚨</div>
-
-                        <div className="tb-notif-content">
-                          <strong>{notification.title}</strong>
-                          <p>{notification.message}</p>
-                          <small>
-                            {new Date(notification.created_at).toLocaleString()}
-                          </small>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                {unreadCount > 0 && (
+                  <span className="tb-notif-badge">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
                 )}
-              </div>
-            )}
-          </div>
+              </button>
+
+              {isNotifOpen && (
+                <div className="tb-notif-dropdown">
+                  <div className="tb-notif-header">
+                    <span>Notifications</span>
+                    <small>{unreadCount} unread</small>
+                  </div>
+
+                  {notifications.length === 0 ? (
+                    <div className="tb-notif-empty">
+                      No emergency notifications.
+                    </div>
+                  ) : (
+                    <div className="tb-notif-list">
+                      {notifications.slice(0, 6).map((notification) => (
+                        <button
+                          key={notification.id}
+                          className={`tb-notif-item ${
+                            !notification.is_read ? "unread" : ""
+                          }`}
+                          onClick={() => handleNotificationClick(notification)}
+                          type="button"
+                        >
+                          <div className="tb-notif-icon">🚨</div>
+
+                          <div className="tb-notif-content">
+                            <strong>{notification.title}</strong>
+                            <p>{notification.message}</p>
+                            <small>
+                              {new Date(
+                                notification.created_at
+                              ).toLocaleString()}
+                            </small>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         <div className="tb-user">
@@ -235,7 +312,7 @@ const Topbar = ({ currentPath }) => {
           <span className="tb-username">{user?.name || "User"}</span>
         </div>
 
-        <button className="tb-logout" onClick={handleLogout}>
+        <button className="tb-logout" onClick={handleLogout} type="button">
           <svg
             width="14"
             height="14"

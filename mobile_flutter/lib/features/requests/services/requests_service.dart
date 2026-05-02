@@ -6,9 +6,10 @@ import '../models/visitor_request.dart';
 import '../models/booking_request.dart';
 import '../models/parking_spot.dart';
 import 'package:flutter/foundation.dart';
+import 'package:resident_app/features/auth/services/auth_service.dart';
 
 class RequestsService {
-  static const String _baseUrl = 'http://10.25.90.51:8000';
+  static const String _baseUrl = 'http://192.168.1.4:8000';
 
   static const bool _useMock = false;
 
@@ -155,52 +156,48 @@ class RequestsService {
   // ============================================================
 
   Future<List<ParkingSpot>> fetchParkingSpots({String? token}) async {
-    if (_useMock) return _mockFetchSpots();
+    final authToken = token ?? await AuthService.getToken();
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/parking/spots'),
-      headers: _headers(token: token),
+      Uri.parse('${AuthService.baseUrl}/parking-spots'),
+      headers: _headers(token: authToken),
     );
+
+    debugPrint('PARKING GET STATUS: ${response.statusCode}');
+    debugPrint('PARKING GET BODY: ${response.body}');
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
       return data.map((e) => ParkingSpot.fromJson(e)).toList();
     }
 
-    throw Exception('Failed to fetch parking spots: ${response.body}');
+    if (response.statusCode == 401) {
+      throw Exception('Your session expired. Please log in again.');
+    }
+
+    throw Exception(_cleanError(response));
   }
 
-  // ============================================================
-  // MOCK PARKING
-  // ============================================================
+  Future<List<ParkingSpot>> fetchAvailableParkingSpots({String? token}) async {
+    final authToken = token ?? await AuthService.getToken();
 
-  Future<List<ParkingSpot>> _mockFetchSpots() async {
-    await Future.delayed(const Duration(seconds: 1));
+    final response = await http.get(
+      Uri.parse('${AuthService.baseUrl}/parking-spots/available'),
+      headers: _headers(token: authToken),
+    );
 
-    final spots = <ParkingSpot>[];
+    debugPrint('PARKING AVAILABLE STATUS: ${response.statusCode}');
+    debugPrint('PARKING AVAILABLE BODY: ${response.body}');
 
-    for (int i = 0; i < 20; i++) {
-      spots.add(
-        ParkingSpot(
-          spotId: 'A-${(i + 1).toString().padLeft(2, '0')}',
-          status: SpotStatus.occupied,
-          residentId: 'res-${i + 1}',
-          isVisitorSpot: false,
-        ),
-      );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => ParkingSpot.fromJson(e)).toList();
     }
 
-    for (int i = 0; i < 10; i++) {
-      spots.add(
-        ParkingSpot(
-          spotId: 'V-${(i + 1).toString().padLeft(2, '0')}',
-          status: SpotStatus.available,
-          residentId: null,
-          isVisitorSpot: true,
-        ),
-      );
+    if (response.statusCode == 401) {
+      throw Exception('Your session expired. Please log in again.');
     }
 
-    return spots;
+    throw Exception(_cleanError(response));
   }
 }

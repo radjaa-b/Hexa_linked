@@ -276,3 +276,31 @@
   font-size: 10px;
   color: #6b7280;
 }
+.tb-sos-sound-btn {
+  border: none;
+  outline: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.tb-sos-sound-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+}
+
+.tb-sos-sound-btn.enabled {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+  cursor: not-allowed;
+}
+
+.tb-sos-sound-btn:disabled {
+  opacity: 0.85;
+}

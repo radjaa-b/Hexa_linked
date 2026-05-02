@@ -118,6 +118,20 @@ class ChatService {
         .toList();
   }
 
+  static Future<void> ensureUserLoaded() async {
+    // If already loaded, do nothing.
+    if (currentUserId.isNotEmpty) return;
+
+    try {
+      // Re-use whichever method you already have that calls /auth/whoami
+      // and populates currentUserId / currentUserName / currentUserUnit.
+      // Typically this looks like:
+      await _loadCurrentUser(); // rename to match your actual private method
+    } catch (e) {
+      debugPrint('⚠️ ensureUserLoaded failed: $e');
+    }
+  }
+
   static Future<void> sendDmMessage(
     String conversationId,
     String content,
