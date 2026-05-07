@@ -274,15 +274,13 @@ class AuthService {
   static String _baseUrl() {
     final envValue = dotenv.env['API_BASE_URL']?.trim();
 
-    if (envValue != null && envValue.isNotEmpty) {
-      print('API_BASE_URL from .env = $envValue');
-    } else {
-      print('API_BASE_URL from .env is missing');
+    if (envValue == null || envValue.isEmpty) {
+      throw Exception('API_BASE_URL missing from .env');
     }
 
-    print('AuthService using fixed backend URL = $_fixedBaseUrl');
+    print('AuthService using ENV URL = $envValue');
 
-    return _fixedBaseUrl.replaceFirst(RegExp(r'/$'), '');
+    return envValue.replaceFirst(RegExp(r'/$'), '');
   }
 
   static Future<http.Response> _sendRequest(

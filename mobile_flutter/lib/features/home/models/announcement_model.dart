@@ -38,7 +38,7 @@ class AnnouncementModel {
 
   Color get accent {
     if (isPinned) return const Color(0xFF1D9E75);
-    return const Color(0xFF4C7EFF);
+    return const Color(0xFF6B9E80);
   }
 
   // Compatibility getters for newer UI code

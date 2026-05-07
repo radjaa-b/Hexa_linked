@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/announcement_model.dart';
+import '../screens/announcement_details_screen.dart';
 
 class AnnouncementCard extends StatelessWidget {
   const AnnouncementCard({
@@ -22,121 +23,145 @@ class AnnouncementCard extends StatelessWidget {
         ? item.author[0].toUpperCase()
         : '?';
 
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: item.isPinned ? const Color(0xFFFFF8EA) : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border(left: BorderSide(color: item.accent, width: 4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: item.accent.withOpacity(0.15),
-                child: Text(
-                  authorInitial,
-                  style: TextStyle(
-                    color: item.accent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+        onTap: () {
+          showGeneralDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: 'Announcement',
+            barrierColor: Colors.black.withOpacity(0.45),
+            transitionDuration: const Duration(milliseconds: 260),
+            pageBuilder: (_, __, ___) {
+              return AnnouncementDetailsScreen(announcement: item);
+            },
+            transitionBuilder: (_, animation, __, child) {
+              return Transform.scale(
+                scale: Curves.easeOutBack.transform(animation.value),
+                child: Opacity(opacity: animation.value, child: child),
+              );
+            },
+          );
+        },
+        child: Container(
+          width: 280,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: item.isPinned ? const Color(0xFFFFF8EA) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.author,
-                      style: const TextStyle(
-                        color: Color(0xFF1A1A1A),
+            ],
+            border: Border(left: BorderSide(color: item.accent, width: 4)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: item.accent.withOpacity(0.15),
+                    child: Text(
+                      authorInitial,
+                      style: TextStyle(
+                        color: item.accent,
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Row(
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (item.isPinned)
-                          Container(
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: item.accent.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              'Pinned',
-                              style: TextStyle(
-                                color: item.accent,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                        Text(
+                          item.author,
+                          style: const TextStyle(
+                            color: Color(0xFF1A1A1A),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (item.isPinned)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: item.accent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Pinned',
+                                  style: TextStyle(
+                                    color: item.accent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              item.timeAgo,
+                              style: const TextStyle(
+                                color: Color(0xFF9A9A9A),
+                                fontSize: 11,
                               ),
                             ),
-                          ),
-                        Text(
-                          item.timeAgo,
-                          style: const TextStyle(
-                            color: Color(0xFF9A9A9A),
-                            fontSize: 11,
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  if (canManage)
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          onEdit?.call();
+                        } else if (value == 'delete') {
+                          onDelete?.call();
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      ],
+                      icon: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Color(0xFF7D7D7D),
+                        size: 20,
+                      ),
+                    ),
+                ],
               ),
-              if (canManage)
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit?.call();
-                    } else if (value == 'delete') {
-                      onDelete?.call();
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                  icon: const Icon(
-                    Icons.more_vert_rounded,
-                    color: Color(0xFF7D7D7D),
-                    size: 20,
+              const SizedBox(height: 12),
+              Expanded(
+                child: Text(
+                  item.content,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF5A5A5A),
+                    fontSize: 13,
+                    height: 1.5,
+                    letterSpacing: 0.1,
                   ),
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Text(
-              item.content,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF5A5A5A),
-                fontSize: 13,
-                height: 1.5,
-                letterSpacing: 0.1,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

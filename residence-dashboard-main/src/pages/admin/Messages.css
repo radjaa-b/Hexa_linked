@@ -641,3 +641,77 @@
   padding: 10px;
   flex-shrink: 0;
 }
+
+/* ── Announcement details modal ── */
+
+.ann-card {
+  cursor: pointer;
+}
+
+.ann-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 31, 17, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ann-modal {
+  width: min(560px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 18px;
+  border: 0.5px solid #e0e0da;
+  padding: 22px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.ann-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ann-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+  margin: 8px 0 6px;
+}
+
+.ann-modal-meta {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.ann-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0.5px solid #e0e0da;
+  background: #f7f7f4;
+  color: #555;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ann-modal-close:hover {
+  background: #f0f0ec;
+  color: #111;
+}
+
+.ann-modal-body {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}

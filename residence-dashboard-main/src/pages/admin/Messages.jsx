@@ -112,6 +112,7 @@ const Communication = () => {
   const [editAnnId, setEditAnnId] = useState(null);
   const [annError, setAnnError] = useState("");
   const [showAnnForm, setShowAnnForm] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
   // ── Contact requests state ──
   const [messages, setMessages] = useState([]);
@@ -436,9 +437,10 @@ const Communication = () => {
 
                 return (
                   <div
-                    key={ann.id}
-                    className={`ann-card ${ann.pinned ? "pinned" : ""}`}
-                  >
+  key={ann.id}
+  className={`ann-card ${ann.pinned ? "pinned" : ""}`}
+  onClick={() => setSelectedAnnouncement(ann)}
+>
                     <div className="ann-card-top">
                       {ann.pinned && (
                         <span className="ann-pin-badge">Pinned</span>
@@ -449,7 +451,10 @@ const Communication = () => {
                           <button
                             type="button"
                             className="ann-icon-btn"
-                            onClick={() => handleEditAnn(ann)}
+                            onClick={(e) => {
+  e.stopPropagation();
+  handleEditAnn(ann);
+}}
                           >
                             <svg
                               width="12"
@@ -467,7 +472,10 @@ const Communication = () => {
                           <button
                             type="button"
                             className="ann-icon-btn delete"
-                            onClick={() => handleDeleteAnn(ann.id)}
+                            onClick={(e) => {
+  e.stopPropagation();
+  handleDeleteAnn(ann.id);
+}}
                           >
                             <svg
                               width="12"
@@ -661,6 +669,45 @@ const Communication = () => {
           )}
         </div>
       </div>
+          {selectedAnnouncement && (
+  <div
+    className="ann-modal-overlay"
+    onClick={() => setSelectedAnnouncement(null)}
+  >
+    <div
+      className="ann-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="ann-modal-head">
+        <div>
+          {selectedAnnouncement.pinned && (
+            <span className="ann-pin-badge">Pinned</span>
+          )}
+          <h2 className="ann-modal-title">
+            {selectedAnnouncement.title}
+          </h2>
+          <p className="ann-modal-meta">
+            {selectedAnnouncement.authorName} ·{" "}
+            {formatTime(selectedAnnouncement.postedAt)}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="ann-modal-close"
+          onClick={() => setSelectedAnnouncement(null)}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="ann-modal-body">
+        {selectedAnnouncement.body}
+      </div>
+    </div>
+  </div>
+)}
+
     </PageWrapper>
   );
 };

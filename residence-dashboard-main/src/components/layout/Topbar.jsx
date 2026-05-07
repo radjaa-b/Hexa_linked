@@ -10,9 +10,11 @@ import {
   getUnreadNotificationCount,
   markNotificationAsRead,
 } from "../../store/notificationStore";
+
 import {
   enableSosAlarmSound,
   playSosAlarmSound,
+  playNotificationSound,
 } from "../../utils/sosAlarmSound";
 
 import "./Topbar.css";
@@ -59,6 +61,46 @@ const isEmergencyNotification = (notification) => {
     searchableText.includes("emergency") ||
     searchableText.includes("fire") ||
     searchableText.includes("gas")
+  );
+};
+
+const getNotificationText = (notification) => {
+  return `
+    ${notification.type || ""}
+    ${notification.category || ""}
+    ${notification.title || ""}
+    ${notification.message || ""}
+  `.toLowerCase();
+};
+
+const isVisitorNotification = (notification) => {
+  const text = getNotificationText(notification);
+
+  return (
+    text.includes("visitor") ||
+    text.includes("visitor request") ||
+    text.includes("access request")
+  );
+};
+
+const isMaintenanceNotification = (notification) => {
+  const text = getNotificationText(notification);
+
+  return (
+    text.includes("maintenance") ||
+    text.includes("repair") ||
+    text.includes("technician")
+  );
+};
+
+const isContactAdminNotification = (notification) => {
+  const text = getNotificationText(notification);
+
+  return (
+    text.includes("contact admin") ||
+    text.includes("contact") ||
+    text.includes("message from resident") ||
+    text.includes("admin request")
   );
 };
 
