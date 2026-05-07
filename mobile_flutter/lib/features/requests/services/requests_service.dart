@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
 
 class RequestsService {
-  static const String _baseUrl = 'http://10.116.137.51:8000';
+  static String get _baseUrl => AuthService.baseUrl;
 
   static const bool _useMock = false;
 

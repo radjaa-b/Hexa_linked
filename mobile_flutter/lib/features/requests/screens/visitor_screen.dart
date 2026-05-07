@@ -23,7 +23,6 @@ class _VisitorScreenState extends State<VisitorScreen> {
   DateTime? _visitDate;
 
   TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
 
   bool _isLoading = false;
 
@@ -51,23 +50,40 @@ class _VisitorScreenState extends State<VisitorScreen> {
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 60)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.darkGreen,
+            onPrimary: AppColors.parchment,
+          ),
+        ),
+        child: child!,
+      ),
     );
-    if (picked != null) setState(() => _visitDate = picked);
+
+    if (picked != null) {
+      setState(() => _visitDate = picked);
+    }
   }
 
-  Future<void> _pickTime({required bool isStart}) async {
+  Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: _startTime ?? TimeOfDay.now(),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.darkGreen,
+            onPrimary: AppColors.parchment,
+          ),
+        ),
+        child: child!,
+      ),
     );
 
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _startTime = picked;
-        } else {
-          _endTime = picked;
-        }
+        _startTime = picked;
       });
     }
   }
@@ -77,11 +93,21 @@ class _VisitorScreenState extends State<VisitorScreen> {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
   }
 
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_visitDate == null || _startTime == null || _endTime == null) {
-      showErrorSnack(context, 'Please select date and time');
+    if (_visitDate == null) {
+      showErrorSnack(context, 'Please select a visit date');
+      return;
+    }
+
+    if (_startTime == null) {
+      showErrorSnack(context, 'Please select the expected time of arrival');
       return;
     }
 
@@ -91,7 +117,10 @@ class _VisitorScreenState extends State<VisitorScreen> {
       final session = await AuthService.getStoredSession(
         requiredRole: 'resident',
       );
-      if (session == null) throw Exception('User not authenticated');
+
+      if (session == null) {
+        throw Exception('User not authenticated');
+      }
 
       await RequestsService().submitVisitorRequest(
         token: session.accessToken,
@@ -102,7 +131,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
           purpose: _purpose,
           visitDate: _visitDate!,
           startTime: _formatTime(_startTime),
-          endTime: _formatTime(_endTime),
+          endTime: _formatTime(_startTime),
           note: _noteController.text.trim().isEmpty
               ? null
               : _noteController.text.trim(),
@@ -114,10 +143,50 @@ class _VisitorScreenState extends State<VisitorScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) showErrorSnack(context, e.toString());
+      if (mounted) {
+        showErrorSnack(context, e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _timePickerBox({
+    required String hint,
+    required TimeOfDay? time,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.access_time_rounded,
+              color: AppColors.mutedGreen,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              time == null ? hint : _formatTime(time),
+              style: TextStyle(
+                color: time == null
+                    ? AppColors.mutedGreen
+                    : AppColors.darkGreen,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -144,15 +213,16 @@ class _VisitorScreenState extends State<VisitorScreen> {
                         RequestTextField(
                           controller: _nameController,
                           hint: 'Ahmed Benali',
-                          validator: (v) =>
-                              v == null || v.isEmpty ? 'Required' : null,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Name is required'
+                              : null,
                         ),
                         const SizedBox(height: 16),
 
                         const FieldLabel('Visitor Phone'),
                         RequestTextField(
                           controller: _phoneController,
-                          hint: 'e.g. +213 555 123 456',
+                          hint: '+213 555 123 456',
                           keyboardType: TextInputType.phone,
                           validator: (v) => v == null || v.trim().isEmpty
                               ? 'Phone is required'
@@ -165,9 +235,15 @@ class _VisitorScreenState extends State<VisitorScreen> {
                           controller: _emailController,
                           hint: 'visitor@email.com',
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) => v == null || v.trim().isEmpty
-                              ? 'Email is required'
-                              : null,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Email is required';
+                            }
+                            if (!v.contains('@')) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),
@@ -195,37 +271,28 @@ class _VisitorScreenState extends State<VisitorScreen> {
                           hint: 'Select date',
                           onTap: _pickDate,
                         ),
+                        if (_visitDate != null) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Selected: ${_formatDate(_visitDate)}',
+                              style: const TextStyle(
+                                color: AppColors.mutedGreen,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 16),
 
-                        const FieldLabel('Start Time'),
-                        DatePickerRow(
-                          selectedDate: _startTime == null
-                              ? null
-                              : DateTime(
-                                  0,
-                                  0,
-                                  0,
-                                  _startTime!.hour,
-                                  _startTime!.minute,
-                                ),
-                          hint: 'Select start time',
-                          onTap: () => _pickTime(isStart: true),
-                        ),
-                        const SizedBox(height: 16),
-
-                        const FieldLabel('End Time'),
-                        DatePickerRow(
-                          selectedDate: _endTime == null
-                              ? null
-                              : DateTime(
-                                  0,
-                                  0,
-                                  0,
-                                  _endTime!.hour,
-                                  _endTime!.minute,
-                                ),
-                          hint: 'Select end time',
-                          onTap: () => _pickTime(isStart: false),
+                        const FieldLabel('Expected Time of Arrival'),
+                        _timePickerBox(
+                          hint: 'Select expected arrival time',
+                          time: _startTime,
+                          onTap: _pickTime,
                         ),
                       ],
                     ),
@@ -238,6 +305,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                         RequestTextField(
                           controller: _noteController,
                           hint: 'Optional note',
+                          validator: (_) => null,
                         ),
                       ],
                     ),

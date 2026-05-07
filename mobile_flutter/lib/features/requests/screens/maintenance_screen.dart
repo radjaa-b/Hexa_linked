@@ -24,10 +24,6 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   final List<String> _categories = [
     'Plumbing',
     'Electrical',
-    'HVAC',
-    'Appliance',
-    'Structural',
-    'Pest Control',
     'Cleaning',
     'Other',
   ];

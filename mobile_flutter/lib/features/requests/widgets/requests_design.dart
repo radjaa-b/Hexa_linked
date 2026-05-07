@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 // ─── Colors ───────────────────────────────────────────────────
 class AppColors {
-  static const darkGreen  = Color(0xFF1C3B2E);
-  static const parchment  = Color(0xFFE8D9B5);
-  static const gold       = Color(0xFFB8974A);
+  static const darkGreen = Color(0xFF1C3B2E);
+  static const parchment = Color(0xFFE8D9B5);
+  static const gold = Color(0xFFB8974A);
   static const mutedGreen = Color(0xFF6B9E80);
-  static const cream      = Color(0xFFF5F0E8);
-  static const teal       = Color(0xFF4A7C6F);
+  static const cream = Color(0xFFF5F0E8);
+  static const teal = Color(0xFF4A7C6F);
 }
 
 // ─── App bar ──────────────────────────────────────────────────
@@ -27,13 +27,15 @@ class RequestsAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        top:    MediaQuery.of(context).padding.top + 12,
-        left:   16, right: 16, bottom: 16,
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+        bottom: 16,
       ),
       decoration: const BoxDecoration(
         color: AppColors.darkGreen,
         borderRadius: BorderRadius.only(
-          bottomLeft:  Radius.circular(28),
+          bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
       ),
@@ -42,23 +44,30 @@ class RequestsAppBar extends StatelessWidget {
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              width: 38, height: 38,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: AppColors.parchment.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.parchment, size: 16),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.parchment,
+                size: 16,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: AppColors.parchment.withOpacity(0.12),
               borderRadius: BorderRadius.circular(13),
               border: Border.all(
-                  color: AppColors.gold.withOpacity(0.30), width: 1),
+                color: AppColors.gold.withOpacity(0.30),
+                width: 1,
+              ),
             ),
             child: Icon(icon, color: AppColors.parchment, size: 20),
           ),
@@ -67,14 +76,21 @@ class RequestsAppBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: AppColors.parchment,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700)),
-                Text(subtitle,
-                    style: const TextStyle(
-                        color: AppColors.mutedGreen, fontSize: 12)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.parchment,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppColors.mutedGreen,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -97,12 +113,12 @@ class FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: AppColors.gold.withOpacity(0.15), width: 1),
+        border: Border.all(color: AppColors.gold.withOpacity(0.15), width: 1),
       ),
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
     );
   }
 }
@@ -116,11 +132,14 @@ class FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkGreen)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.darkGreen,
+        ),
+      ),
     );
   }
 }
@@ -150,27 +169,37 @@ class RequestTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       style: const TextStyle(
-          fontSize: 14,
-          color: AppColors.darkGreen,
-          fontWeight: FontWeight.w500),
+        fontSize: 14,
+        color: AppColors.darkGreen,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
-            color: AppColors.darkGreen.withOpacity(0.30), fontSize: 14),
+          color: AppColors.darkGreen.withOpacity(0.30),
+          fontSize: 14,
+        ),
         filled: true,
         fillColor: AppColors.cream,
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-                color: AppColors.gold.withOpacity(0.50), width: 1.5)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: AppColors.gold.withOpacity(0.50),
+            width: 1.5,
+          ),
+        ),
         errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 13,
+        ),
       ),
     );
   }
@@ -194,19 +223,23 @@ class RequestDropdown extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(12)),
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
           dropdownColor: AppColors.cream,
           style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.darkGreen,
-              fontWeight: FontWeight.w500),
-          icon: Icon(Icons.keyboard_arrow_down_rounded,
-              color: AppColors.darkGreen.withOpacity(0.50)),
+            fontSize: 14,
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w500,
+          ),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppColors.darkGreen.withOpacity(0.50),
+          ),
           items: items
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
@@ -237,29 +270,54 @@ class DatePickerRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-            color: AppColors.cream,
-            borderRadius: BorderRadius.circular(12)),
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today_outlined,
-                size: 18,
-                color: AppColors.darkGreen.withOpacity(0.40)),
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: AppColors.darkGreen.withOpacity(0.40),
+            ),
             const SizedBox(width: 10),
             Text(
               selectedDate == null
                   ? hint
-                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                  : '${selectedDate!.day.toString().padLeft(2, '0')} '
+                        '${_monthName(selectedDate!.month)} '
+                        '${selectedDate!.year}',
               style: TextStyle(
-                  color: selectedDate == null
-                      ? AppColors.darkGreen.withOpacity(0.30)
-                      : AppColors.darkGreen,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500),
+                color: selectedDate == null
+                    ? AppColors.darkGreen.withOpacity(0.30)
+                    : AppColors.darkGreen,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return months[month - 1];
   }
 }
 
@@ -287,20 +345,28 @@ class SubmitButton extends StatelessWidget {
           backgroundColor: AppColors.darkGreen,
           disabledBackgroundColor: AppColors.darkGreen.withOpacity(0.50),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
         child: isLoading
             ? const SizedBox(
-                width: 20, height: 20,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.parchment))
-            : Text(label,
+                  strokeWidth: 2,
+                  color: AppColors.parchment,
+                ),
+              )
+            : Text(
+                label,
                 style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.parchment,
-                    letterSpacing: 0.2)),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.parchment,
+                  letterSpacing: 0.2,
+                ),
+              ),
       ),
     );
   }
@@ -308,32 +374,50 @@ class SubmitButton extends StatelessWidget {
 
 // ─── Snackbars ────────────────────────────────────────────────
 void showSuccessSnack(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Row(children: [
-      const Icon(Icons.check_circle_outline_rounded,
-          color: Colors.white, size: 18),
-      const SizedBox(width: 10),
-      Text(message, style: const TextStyle(fontWeight: FontWeight.w500)),
-    ]),
-    backgroundColor: AppColors.teal,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-  ));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Text(message, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
+      ),
+      backgroundColor: AppColors.teal,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+    ),
+  );
 }
 
 void showErrorSnack(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Row(children: [
-      const Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
-      const SizedBox(width: 10),
-      Expanded(
-          child: Text(message,
-              style: const TextStyle(fontWeight: FontWeight.w500))),
-    ]),
-    backgroundColor: Colors.redAccent.shade700,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-  ));
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: Colors.redAccent.shade700,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+    ),
+  );
 }
