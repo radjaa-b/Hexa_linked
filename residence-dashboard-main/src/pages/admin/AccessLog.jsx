@@ -423,35 +423,69 @@ const AccessLog = () => {
               </span>
             </div>
 
-            <div className="visitor-chart-card">
-              <div className="visitor-chart-title">Visitor status overview</div>
+            <div className="access-graph-card">
+  <div className="access-graph-head">
+    <div>
+      <div className="access-graph-title">Access Activity</div>
+      <div className="access-graph-sub">Manual vs visitor entries by day</div>
+    </div>
 
-              {Object.keys(statusCounts).length === 0 ? (
-                <div className="visitor-chart-empty">No chart data yet</div>
-              ) : (
-                <div className="visitor-chart">
-                  {Object.entries(statusCounts).map(([status, count]) => (
-                    <div key={status} className="visitor-chart-row">
-                      <span className="visitor-chart-label">{status}</span>
+    <div className="access-graph-legend">
+      <span><i className="manual-dot" /> Manual</span>
+      <span><i className="visitor-dot" /> Visitors</span>
+    </div>
+  </div>
 
-                      <div className="visitor-chart-track">
-                        <div
-                          className={`visitor-chart-bar ${status}`}
-                          style={{
-                            width: `${Math.max(
-                              10,
-                              (count / maxChartValue) * 100
-                            )}%`,
-                          }}
-                        />
-                      </div>
+  <div className="access-graph">
+    {(() => {
+      const activityMap = {};
 
-                      <span className="visitor-chart-count">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+      filteredManualLogs.forEach((entry) => {
+        const day = formatDateTime(entry.timestamp).date;
+        if (!activityMap[day]) activityMap[day] = { manual: 0, visitor: 0 };
+        activityMap[day].manual += 1;
+      });
+
+      filteredVisitorLogs.forEach((entry) => {
+        const day = formatDateTime(entry.created_at || entry.timestamp).date;
+        if (!activityMap[day]) activityMap[day] = { manual: 0, visitor: 0 };
+        activityMap[day].visitor += 1;
+      });
+
+      const rows = Object.entries(activityMap).slice(-7);
+
+      const maxValue = Math.max(
+        1,
+        ...rows.flatMap(([, v]) => [v.manual, v.visitor])
+      );
+
+      if (rows.length === 0) {
+        return <div className="access-graph-empty">No activity data yet</div>;
+      }
+
+      return rows.map(([day, values]) => (
+        <div key={day} className="access-graph-day">
+          <div className="access-bars">
+            <div
+              className="access-bar manual"
+              style={{ height: `${Math.max(8, (values.manual / maxValue) * 100)}%` }}
+              title={`Manual: ${values.manual}`}
+            />
+            <div
+              className="access-bar visitor"
+              style={{ height: `${Math.max(8, (values.visitor / maxValue) * 100)}%` }}
+              title={`Visitors: ${values.visitor}`}
+            />
+          </div>
+
+          <div className="access-day-label">
+            {day.split(" ").slice(0, 2).join(" ")}
+          </div>
+        </div>
+      ));
+    })()}
+  </div>
+</div>
 
             {loadingVisitors ? (
               <div className="log-empty">Loading visitor logs...</div>

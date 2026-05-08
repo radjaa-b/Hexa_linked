@@ -284,77 +284,115 @@
   color: #0f6e56;
 }
 
-/* ── Visitor chart ── */
-.visitor-chart-card {
+.access-graph-card {
   background: #111f11;
-  border-radius: 14px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 18px;
   margin-bottom: 16px;
 }
 
-.visitor-chart-title {
-  font-size: 12px;
-  color: white;
-  font-weight: 600;
-  margin-bottom: 14px;
-}
-
-.visitor-chart {
+.access-graph-head {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.visitor-chart-row {
-  display: grid;
-  grid-template-columns: 90px 1fr 28px;
+.access-graph-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.access-graph-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.access-graph-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.access-graph-legend span {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
-.visitor-chart-label {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.62);
-  text-transform: uppercase;
-}
-
-.visitor-chart-track {
+.access-graph-legend i {
+  width: 8px;
   height: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
+  border-radius: 50%;
+  display: inline-block;
 }
 
-.visitor-chart-bar {
-  height: 100%;
-  border-radius: 999px;
+.manual-dot {
   background: #5dcaa5;
 }
 
-.visitor-chart-bar.PENDING {
-  background: #f39c12;
+.visitor-dot {
+  background: #d4a64f;
 }
 
-.visitor-chart-bar.APPROVED {
-  background: #2ecc71;
+.access-graph {
+  height: 190px;
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 12px 4px 0;
 }
 
-.visitor-chart-bar.REJECTED {
-  background: #e74c3c;
+.access-graph-day {
+  flex: 1;
+  min-width: 42px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.visitor-chart-bar.ARRIVED {
-  background: #1abc9c;
+.access-bars {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 6px;
 }
 
-.visitor-chart-bar.EXITED {
-  background: #95a5a6;
+.access-bar {
+  width: 13px;
+  border-radius: 999px 999px 3px 3px;
+  transition: height 0.35s ease;
 }
 
-.visitor-chart-count {
-  font-size: 11px;
-  color: white;
-  text-align: right;
+.access-bar.manual {
+  background: #5dcaa5;
+}
+
+.access-bar.visitor {
+  background: #d4a64f;
+}
+
+.access-day-label {
+  margin-top: 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.access-graph-empty {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  padding: 30px 0;
 }
 
 .visitor-chart-empty {
