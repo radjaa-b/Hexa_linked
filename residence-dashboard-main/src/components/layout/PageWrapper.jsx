@@ -1,9 +1,7 @@
 import { useLocation } from "react-router-dom";
 import Topbar from "./Topbar";
+import StaffContactAdminButton from "../contactAdmin/StaffContactAdminButton";
 import "./PageWrapper.css";
-
-// Wraps every protected page with the topbar + layout
-// Usage: wrap any page content with <PageWrapper title="Page title">
 
 const PageWrapper = ({ children, title }) => {
   const location = useLocation();
@@ -12,10 +10,10 @@ const PageWrapper = ({ children, title }) => {
     <div className="pw-shell">
       <Topbar currentPath={location.pathname} />
       <div className="pw-body">
-        <main className="pw-main">
-          {children}
-        </main>
+        <main className="pw-main">{children}</main>
       </div>
+
+      <StaffContactAdminButton />
     </div>
   );
 };

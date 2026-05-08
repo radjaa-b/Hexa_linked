@@ -16,3 +16,8 @@ export const updateContactRequestStatus = async (id, status) => {
   });
   return response.data;
 };
+
+export const createContactRequest = async (data) => {
+  const response = await axiosInstance.post("/contact-admin", data);
+  return response.data;
+};

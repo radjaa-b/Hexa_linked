@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import "./GateControl.css";
+import { createSecurityAccessLog, getSecurityAccessLogs } from "../../services/accessLogService";
 
 // ============================================================
 // Gate Control - Security Agent Page with Dynamic Greeting
@@ -11,20 +12,14 @@ const mockGates = [
   { id: "gate-2", name: "Secondary gate", status: "closed", lastChangedBy: "Farid Belkacem", lastChangedAt: "2026-03-29T22:00:00Z" },
 ];
 
-const mockLog = [
-  { id: "1", name: "Ahmed Benali",   unit: "A-12", type: "resident", method: "qr_code", gate: "Main gate",      timestamp: "2026-03-29T08:30:00Z" },
-  { id: "2", name: "Karima Saidi",   unit: null,   type: "staff",    method: "manual",  gate: "Main gate",      timestamp: "2026-03-29T08:15:00Z" },
-  { id: "3", name: "Unknown visitor",unit: null,   type: "visitor",  method: "manual",  gate: "Secondary gate", timestamp: "2026-03-29T07:55:00Z" },
-  { id: "4", name: "Youcef Amrani",  unit: "B-04", type: "resident", method: "qr_code", gate: "Main gate",      timestamp: "2026-03-29T07:40:00Z" },
-  { id: "5", name: "Sara Bensaid",   unit: "A-03", type: "resident", method: "qr_code", gate: "Main gate",      timestamp: "2026-03-29T07:20:00Z" },
-];
+
 
 const emptyForm = { visitorName: "", unit: "", gateId: "gate-1", type: "visitor" };
 
 const typeStyles = {
   resident: { bg: "#edfaf5", color: "#0F6E56", label: "Resident" },
-  staff:    { bg: "#E6F1FB", color: "#185FA5", label: "Staff"    },
-  visitor:  { bg: "#fdf0e0", color: "#854F0B", label: "Visitor"  },
+  staff:    { bg: "#E6F1FB", color: "#185FA5", label: "Staff" },
+  visitor:  { bg: "#fdf0e0", color: "#854F0B", label: "Visitor" },
 };
 
 const formatTime = (iso) => {
@@ -69,7 +64,8 @@ const getWeatherGreeting = () => {
 
 const GateControl = () => {
   const [gates, setGates] = useState(mockGates);
-  const [log, setLog] = useState(mockLog);
+  const [log, setLog] = useState([]);
+ 
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -77,6 +73,56 @@ const GateControl = () => {
   const logRef = useRef(null);
 
   const pendingCount = 2;
+  const parseSecuritySource = (entry) => {
+  const source = entry.source || "";
+
+  if (!source.startsWith("manual_")) {
+    return {
+      id: String(entry.id),
+      name: "RFID / IoT entry",
+      unit: null,
+      type: "resident",
+      method: "qr_code",
+      gate: entry.gate_id || "Main gate",
+      timestamp: entry.event_time,
+    };
+  }
+
+  const [rawType, name, unit] = source.split("|");
+  const type = rawType.replace("manual_", "");
+
+  return {
+    id: String(entry.id),
+    name: name || "Unknown",
+    unit: unit && unit !== "-" ? unit : null,
+    type: type || "visitor",
+    method: "manual",
+    gate: entry.gate_id || "Main gate",
+    timestamp: entry.event_time,
+  };
+};
+
+const loadSecurityLogs = async () => {
+  try {
+    const data = await getSecurityAccessLogs();
+
+    const normalized = Array.isArray(data)
+      ? data.map(parseSecuritySource)
+      : [];
+
+    setLog(normalized);
+  } catch (error) {
+    console.error("Failed to load security logs:", error);
+  }
+};
+
+useEffect(() => {
+  loadSecurityLogs();
+
+  const interval = setInterval(loadSecurityLogs, 5000);
+
+  return () => clearInterval(interval);
+}, []);
 
   const handleGateControl = (gateId, action) => {
     setGates((prev) =>
@@ -94,54 +140,59 @@ const GateControl = () => {
     setFormSuccess("");
   };
 
-  const handleManualEntry = (e) => {
-    e.preventDefault();
-    if (!form.visitorName.trim()) {
-      setFormError("Visitor name is required.");
-      return;
-    }
-    setLoading(true);
+  const handleManualEntry = async (e) => {
+  e.preventDefault();
 
-    const gateName = gates.find((g) => g.id === form.gateId)?.name || "";
+  if (!form.visitorName.trim()) {
+    setFormError("Name is required.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setFormError("");
+    setFormSuccess("");
+
+    const gateName = gates.find((g) => g.id === form.gateId)?.name || "Main gate";
+
+    const source = `manual_${form.type}|${form.visitorName.trim()}|${form.unit.trim() || "-"}`;
+
+    const savedLog = await createSecurityAccessLog({
+      resident_id: null,
+      access_status: "granted",
+      gate_id: gateName,
+      source,
+      event_time: new Date().toISOString(),
+    });
+
     const newEntry = {
-      id: String(Date.now()),
-      name: form.visitorName,
+      id: String(savedLog.id),
+      name: form.visitorName.trim(),
       unit: form.unit || null,
       type: form.type,
       method: "manual",
       gate: gateName,
-      timestamp: new Date().toISOString(),
+      timestamp: savedLog.event_time || new Date().toISOString(),
     };
 
     setLog((prev) => [newEntry, ...prev]);
     setForm(emptyForm);
     setFormSuccess("Entry logged successfully.");
-    setLoading(false);
-
     handleGateControl(form.gateId, "open");
 
     if (logRef.current) logRef.current.scrollTop = 0;
-  };
+  } catch (error) {
+    console.error("Failed to create access log:", error);
+    setFormError(
+      error.response?.data?.detail ||
+        "Failed to log entry. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const simulateQRScan = () => {
-    const residents = [
-      { name: "Ahmed Benali", unit: "A-12" },
-      { name: "Youcef Amrani", unit: "B-04" },
-      { name: "Sara Bensaid", unit: "A-03" },
-    ];
-    const r = residents[Math.floor(Math.random() * residents.length)];
-    const newEntry = {
-      id: String(Date.now()),
-      name: r.name,
-      unit: r.unit,
-      type: "resident",
-      method: "qr_code",
-      gate: "Main gate",
-      timestamp: new Date().toISOString(),
-    };
-    setLog((prev) => [newEntry, ...prev]);
-    if (logRef.current) logRef.current.scrollTop = 0;
-  };
+ 
 
   return (
     <PageWrapper>
@@ -266,6 +317,7 @@ const GateControl = () => {
               >
                 <option value="visitor">Visitor</option>
                 <option value="staff">Staff</option>
+                <option value="resident">Resident</option>
               </select>
 
               <label className="gate-manual-label">Full name</label>
@@ -310,14 +362,7 @@ const GateControl = () => {
               </button>
             </form>
 
-            <div className="gate-simulate">
-              <div className="gate-simulate-label">
-                Simulation only — remove when IoT is ready
-              </div>
-              <button className="gate-simulate-btn" onClick={simulateQRScan}>
-                Simulate QR scan
-              </button>
-            </div>
+           
           </div>
 
           {/* Live Log */}
