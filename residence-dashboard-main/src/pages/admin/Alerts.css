@@ -1,0 +1,257 @@
+/* src/pages/admin/Alerts.css */
+
+.al-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Hero ── */
+.al-hero {
+  background: #111f11;
+  border-radius: 16px;
+  padding: 22px 28px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.al-hero-hex {
+  position: absolute;
+  right: 0;
+  top: -20px;
+  pointer-events: none;
+}
+
+.al-hero-tag {
+  font-size: 10px;
+  color: #5DCAA5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.al-hero-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.al-hero-badge {
+  font-size: 11px;
+  background: #e74c3c;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.al-hero-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+
+.al-hero-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.al-stat {
+  min-width: 80px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.08);
+}
+
+.al-stat span {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  color: white;
+  line-height: 1;
+}
+
+.al-stat p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ── Filters ── */
+.al-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.al-filter-btn {
+  padding: 7px 16px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 0.5px solid #e0e0da;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.al-filter-btn:hover {
+  border-color: #1D9E75;
+  color: #1D9E75;
+}
+
+.al-filter-btn.active {
+  background: #111f11;
+  color: white;
+  border-color: #111f11;
+}
+
+/* ── Card ── */
+.al-card {
+  background: white;
+  border-radius: 14px;
+  border: 0.5px solid #e0e0da;
+  padding: 14px 18px;
+}
+
+.al-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.al-empty {
+  font-size: 13px;
+  color: #aaa;
+  padding: 24px;
+  text-align: center;
+}
+
+.al-empty.error { color: #e74c3c; }
+
+/* ── Alert item ── */
+.al-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f7f7f4;
+  border: 0.5px solid #e8e8e3;
+  transition: all 0.15s;
+}
+
+.al-item:hover {
+  border-color: #c8c8c3;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(17,31,17,0.07);
+}
+
+.al-item-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  background: white;
+  border: 0.5px solid #e8e8e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.al-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.al-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.al-item-top h3 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111f11;
+}
+
+.al-item-top p {
+  margin: 0;
+  font-size: 11px;
+  color: #aaa;
+}
+
+/* Status select — styled like a badge */
+.al-status-select {
+  appearance: none;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.al-status-select.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.al-status-select.in_progress {
+  background: #edfaf5;
+  color: #0F6E56;
+}
+
+.al-status-select.resolved {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.al-status-select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.al-item-desc {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.al-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.al-item-meta span {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: white;
+  border: 0.5px solid #e8e8e3;
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+}
+
+@media (max-width: 700px) {
+  .al-hero { flex-direction: column; align-items: stretch; }
+  .al-item-top { flex-direction: column; }
+}

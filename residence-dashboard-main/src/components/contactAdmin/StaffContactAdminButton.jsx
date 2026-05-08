@@ -15,7 +15,7 @@ const StaffContactAdminButton = () => {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState("");
 
   if (!isAllowed) return null;
 
@@ -27,12 +27,19 @@ const StaffContactAdminButton = () => {
     setSubject("");
     setMessage("");
     setError("");
-    setSuccess(false);
   };
 
   const handleClose = () => {
     setOpen(false);
     resetForm();
+  };
+
+  const showToast = (text) => {
+    setToast(text);
+
+    setTimeout(() => {
+      setToast("");
+    }, 3000);
   };
 
   const handleSubmit = async (e) => {
@@ -53,14 +60,9 @@ const StaffContactAdminButton = () => {
         message: message.trim(),
       });
 
-     setSubject("");
-setMessage("");
-setUrgency("medium");
-setSuccess(true);
-
-setTimeout(() => {
-  setSuccess(false);
-}, 3000);
+      setOpen(false);
+      resetForm();
+      showToast("Request sent to admin successfully.");
     } catch (err) {
       console.error("Failed to send contact admin request:", err);
       setError(
@@ -82,6 +84,8 @@ setTimeout(() => {
         <span className="staff-contact-fab-icon">💬</span>
         <span>Contact Admin</span>
       </button>
+
+      {toast && <div className="staff-contact-toast">{toast}</div>}
 
       {open && (
         <div className="staff-contact-overlay" onClick={handleClose}>
@@ -120,9 +124,9 @@ setTimeout(() => {
                   <button
                     key={level}
                     type="button"
-                    className={`staff-urgency-btn ${
-                      urgency === level ? "active" : ""
-                    }`}
+                    className={`staff-urgency-btn ${level} ${
+  urgency === level ? "active" : ""
+}`}
                     onClick={() => setUrgency(level)}
                   >
                     {level.charAt(0).toUpperCase() + level.slice(1)}
@@ -151,11 +155,6 @@ setTimeout(() => {
             </div>
 
             {error && <div className="staff-contact-error">{error}</div>}
-            {success && (
-  <div className="staff-contact-success">
-    Request sent to admin successfully.
-  </div>
-)}
 
             <div className="staff-contact-actions">
               <button

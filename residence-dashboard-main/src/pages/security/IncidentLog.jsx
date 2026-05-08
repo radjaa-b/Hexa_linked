@@ -55,7 +55,12 @@ const normalizeAlert = (item) => ({
       ? "medium"
       : "low",
   description: item.description || "No description provided.",
-  location: item.location || "Unknown location",
+  location:
+  item.location &&
+  item.location.trim() !== "" &&
+  item.location !== "String"
+    ? item.location
+    : "Location not provided",
   triggeredAt: item.created_at,
   status: item.status || "pending",
   residentId: item.resident_id,

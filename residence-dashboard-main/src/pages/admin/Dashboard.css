@@ -494,3 +494,167 @@
   background: rgba(149, 165, 166, 0.15);
   color: #95a5a6;
 }
+
+.dash-card-subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dash-shift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dash-shift-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 0.5px solid rgba(255, 255, 255, 0.07);
+}
+
+.dash-shift-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(93, 202, 165, 0.12);
+  border: 0.5px solid rgba(93, 202, 165, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-shift-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-shift-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.dash-shift-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(238, 231, 231, 0.9);
+}
+
+.dash-shift-role,
+.dash-shift-email {
+  display: block;
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 3px;
+}
+
+.dash-shift-email {
+  color: rgba(93, 202, 165, 0.75);
+}
+
+.dash-shift-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.dash-shift-status {
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.dash-shift-status.active {
+  background: rgba(93, 202, 165, 0.15);
+  color: #5DCAA5;
+}
+
+.dash-shift-status.upcoming {
+  background: rgba(239, 159, 39, 0.15);
+  color: #EF9F27;
+}
+
+.dash-tech-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-tech-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.dash-tech-option:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(93, 202, 165, 0.22);
+}
+
+.dash-tech-option.selected {
+  background: rgba(93, 202, 165, 0.12);
+  border-color: rgba(93, 202, 165, 0.45);
+}
+
+.dash-tech-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(93, 202, 165, 0.12);
+  border: 0.5px solid rgba(93, 202, 165, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-tech-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-tech-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(238, 231, 231, 0.9);
+}
+
+.dash-tech-email {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: rgba(93, 202, 165, 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-tech-id {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.dash-tech-assign-btn {
+  margin-top: 12px;
+}

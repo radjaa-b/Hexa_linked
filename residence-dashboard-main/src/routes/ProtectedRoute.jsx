@@ -1,34 +1,26 @@
-// This component wraps every page that requires authentication.
-// It does two checks before allowing access:
-//   1. Is the user logged in? (has a valid token)
-//   2. Does the user have the correct role for this page?
-// If either check fails, it redirects automatically.
-//
-// Radja: no action needed here — this is purely frontend logic.
-// It reads the token and role from localStorage (set at login).
-
+// src/routes/ProtectedRoute.jsx
 import { Navigate } from "react-router-dom";
-import useAuth from "../hooks/useAuth";
 import { ROUTES } from "../constants/routes";
 
-// allowedRoles: array of roles that can access the wrapped page
-// Example: <ProtectedRoute allowedRoles={["admin"]}> ... </ProtectedRoute>
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const token = localStorage.getItem("token");
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, role } = useAuth();
-
-  // Not logged in at all → go to login page
-  if (!isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} replace />;
+  let currentRole = "";
+  try {
+    const raw = localStorage.getItem("user");
+    const parsed = raw ? JSON.parse(raw) : null;
+    currentRole = parsed?.role?.toLowerCase().trim() ?? "";
+  } catch {
+    currentRole = "";
   }
 
-  // Logged in but wrong role → go to login page
-  // (this handles the case where someone manually types a URL)
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to={ROUTES.LOGIN} replace />;
-  }
+  const allowed = allowedRoles.map((r) => r.toLowerCase().trim());
 
-  // All good → render the page
+  console.log("ProtectedRoute debug:", { tokenExists: Boolean(token), currentRole, allowed });
+
+  if (!token) return <Navigate to={ROUTES.LOGIN} replace />;
+  if (allowed.length > 0 && !allowed.includes(currentRole)) return <Navigate to={ROUTES.LOGIN} replace />;
+
   return children;
 };
 

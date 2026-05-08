@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PageWrapper from "../../components/layout/PageWrapper";
 import "./Dashboard.css";
 import useAuth from "../../hooks/useAuth";
 import {
   getMaintenanceRequests,
   getMaintenanceRequestById,
-  updateMaintenanceStatus,
+ 
   assignTechnicianToMaintenance,
 } from "../../services/maintenanceService";
 import { getAlerts } from "../../services/alertService";
@@ -13,30 +14,11 @@ import {
   getAllVisitorRequests,
   getVisitorAccessLogs,
 } from "../../services/visitorRequestsService";
+import { getResidents } from "../../api/residents.api";
+import { getContactRequests } from "../../services/contactAdminService";
+import { getSecurityAccessLogs } from "../../services/accessLogService";
 
-const mockStats = {
-  totalResidents: 120,
-  todayEntries: 34,
-  pendingRequests: 4,
-  newMessages: 2,
-};
-
-const mockAccessLog = [
-  { id: 1, name: "Ahmed Benali", unit: "Unit A-12 · Resident", type: "entry", time: "08:30" },
-  { id: 2, name: "Karima Saidi", unit: "Security Agent · Staff", type: "entry", time: "08:15" },
-  { id: 3, name: "Unknown visitor", unit: "Gate 2 · Unauthorized", type: "alert", time: "07:55" },
-  { id: 4, name: "Youcef Amrani", unit: "Unit B-04 · Resident", type: "entry", time: "07:40" },
-];
-
-const mockAlerts = [
-  { id: 1, title: "Unauthorized access", sub: "Gate 2 · 07:55 today", type: "danger" },
-  { id: 2, title: "High consumption", sub: "Building B · Electricity", type: "warning" },
-];
-
-const mockVisitors = [
-  { id: 1, name: "Karim Ouali", initials: "KO" },
-  { id: 2, name: "Sara Bensaid", initials: "SB" },
-];
+import { ROUTES } from "../../constants/routes";
 
 const mockConsumption = {
   electricity: { value: 1240, unit: "kWh", trend: "+5%", up: true },
@@ -60,9 +42,7 @@ const formatPreferredDate = (value) => {
   if (!value) return "No preferred date";
 
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
+  if (Number.isNaN(parsed.getTime())) return value;
 
   return (
     parsed.toLocaleDateString("en-GB", {
@@ -77,37 +57,182 @@ const formatPreferredDate = (value) => {
   );
 };
 
+const isToday = (value) => {
+  if (!value) return false;
+
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return false;
+
+  const now = new Date();
+
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+};
+
+const staffShifts = [
+  {
+    id: "SEC-204",
+    role: "Security Agent",
+    icon: "🛡️",
+    name: "Youcef Bouaroudj",
+    email: "youcefbouaroudj891@gmail.com",
+    shift: "08:00 → 16:00",
+    status: "On shift",
+  },
+  {
+    id: "TECH-118",
+    role: "Technician",
+    icon: "🛠️",
+    name: "Atyl Maintenance",
+    email: "atyl00hv@gmail.com",
+    shift: "14:00 → 22:00",
+    status: "On shift",
+  },
+  {
+    id: "SEC-332",
+    role: "Security Agent",
+    icon: "🛡️",
+    name: "Karim Ouali",
+    email: "karimBenn@gmail.com",
+    shift: "22:00 → 06:00",
+    status: "Upcoming",
+  },
+];
+
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const [stats] = useState(mockStats);
-  const [accessLog] = useState(mockAccessLog);
+  const loadTechnicians = async () => {
+  try {
+    const data = await getResidents({ search: "" });
+
+    const techs = Array.isArray(data)
+      ? data
+          .filter((user) => user.role === "technician")
+          .map((user) => ({
+            id: user.id,
+            name: user.full_name || user.username || `Technician #${user.id}`,
+            email: user.email || "No email",
+          }))
+      : [];
+
+    setTechnicians(techs);
+  } catch (error) {
+    console.error("Failed to load technicians:", error);
+    setTechnicians([]);
+  }
+};
+
+  const [stats, setStats] = useState({
+    totalResidents: 0,
+    todayEntries: 0,
+    pendingRequests: 0,
+    newMessages: 0,
+  });
+
   const [maintenance, setMaintenance] = useState([]);
   const [alerts, setAlerts] = useState([]);
-  const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [visitorRequests, setVisitorRequests] = useState([]);
   const [accessLogs, setAccessLogs] = useState([]);
-  const [loadingVisitors, setLoadingVisitors] = useState(true);
-  const [loadingLogs, setLoadingLogs] = useState(true);
   const [consumption] = useState(mockConsumption);
 
   const [loadingMaintenance, setLoadingMaintenance] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+  const [loadingVisitors, setLoadingVisitors] = useState(true);
+  const [loadingLogs, setLoadingLogs] = useState(true);
 
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loadingRequestDetails, setLoadingRequestDetails] = useState(false);
 
-  const [statusValue, setStatusValue] = useState("");
+
   const [technicianId, setTechnicianId] = useState("");
+const [technicians, setTechnicians] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
 
-  const loadMaintenance = async () => {
+  const loadDashboardStats = async () => {
     try {
-      setLoadingMaintenance(true);
+      const [
+        residentsData,
+        visitorRequestsData,
+        visitorLogsData,
+        securityLogsData,
+        maintenanceData,
+        alertsData,
+        contactRequestsData,
+      ] = await Promise.all([
+        getResidents({ search: "" }),
+        getAllVisitorRequests(),
+        getVisitorAccessLogs(),
+        getSecurityAccessLogs(),
+        getMaintenanceRequests(),
+        getAlerts(),
+        getContactRequests(),
+      ]);
+
+      const totalResidents = Array.isArray(residentsData)
+        ? residentsData.filter((u) => u.role === "resident").length
+        : 0;
+
+      const visitorEntriesToday = Array.isArray(visitorLogsData)
+        ? visitorLogsData.filter((log) =>
+            isToday(log.created_at || log.event_time || log.timestamp)
+          ).length
+        : 0;
+
+      const manualEntriesToday = Array.isArray(securityLogsData)
+        ? securityLogsData.filter((log) =>
+            isToday(log.event_time || log.created_at || log.timestamp)
+          ).length
+        : 0;
+
+      const pendingMaintenance = Array.isArray(maintenanceData)
+        ? maintenanceData.filter((r) =>
+            ["pending", "in_progress"].includes(
+              (r.status || "").toLowerCase()
+            )
+          ).length
+        : 0;
+
+      const pendingVisitors = Array.isArray(visitorRequestsData)
+        ? visitorRequestsData.filter((v) => v.status === "PENDING").length
+        : 0;
+
+      const pendingAlerts = Array.isArray(alertsData)
+        ? alertsData.filter((a) =>
+            ["pending", "in_progress"].includes(
+              (a.status || "").toLowerCase()
+            )
+          ).length
+        : 0;
+
+      const pendingContactMessages = Array.isArray(contactRequestsData)
+        ? contactRequestsData.filter(
+            (m) => (m.status || "").toLowerCase() === "pending"
+          ).length
+        : 0;
+
+      setStats({
+        totalResidents,
+        todayEntries: visitorEntriesToday + manualEntriesToday,
+        pendingRequests: pendingMaintenance + pendingVisitors + pendingAlerts,
+        newMessages: pendingContactMessages,
+      });
+    } catch (error) {
+      console.error("Failed to load dashboard stats:", error);
+    }
+  };
+
+  const loadMaintenance = async (silent = false) => {
+    try {
+      if (!silent) setLoadingMaintenance(true);
 
       const data = await getMaintenanceRequests();
-      console.log("MAINTENANCE RAW DATA:", data);
 
       const normalized = Array.isArray(data)
         ? data
@@ -129,110 +254,124 @@ const Dashboard = () => {
       console.error("Failed to load maintenance requests:", error);
       console.error("Backend response:", error?.response?.data);
       setMaintenance([]);
-
     } finally {
-      setLoadingMaintenance(false);
+      if (!silent) setLoadingMaintenance(false);
     }
   };
 
-  const loadAlerts = async () => {
-  try {
-    setLoadingAlerts(true);
+  const loadAlerts = async (silent = false) => {
+    try {
+      if (!silent) setLoadingAlerts(true);
 
-    const data = await getAlerts();
-    console.log("ALERTS RAW DATA:", data);
+      const data = await getAlerts();
 
-    const normalized = Array.isArray(data)
-      ? data
-          .slice(0, 3) // only show latest 3 like your UI
-          .map((item) => ({
+      const normalized = Array.isArray(data)
+        ? data.slice(0, 3).map((item) => ({
             id: item.id,
             title: item.incident_type?.toUpperCase() || "Alert",
-            sub: `${item.location || "Unknown"} · ${new Date(item.created_at).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}`,
+            sub: `${item.location || "Unknown"} · ${new Date(
+              item.created_at
+            ).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`,
             type:
-              item.incident_type === "fire"
-                ? "danger"
-                : item.incident_type === "medical"
-                ? "warning"
-                : item.incident_type === "security"
+              item.incident_type === "fire" ||
+              item.incident_type === "security"
                 ? "danger"
                 : "warning",
           }))
-      : [];
+        : [];
 
-    setAlerts(normalized);
-  } catch (error) {
-    console.error("Failed to load alerts:", error);
-    setAlerts([]);
-  } finally {
-    setLoadingAlerts(false);
-  }
-};
+      setAlerts(normalized);
+    } catch (error) {
+      console.error("Failed to load alerts:", error);
+      setAlerts([]);
+    } finally {
+      if (!silent) setLoadingAlerts(false);
+    }
+  };
+
+  const loadVisitorRequests = async (silent = false) => {
+    try {
+      if (!silent) setLoadingVisitors(true);
+
+      const data = await getAllVisitorRequests();
+
+      const pending = Array.isArray(data)
+        ? data.filter((v) => v.status === "PENDING").slice(0, 5)
+        : [];
+
+      setVisitorRequests(pending);
+    } catch (error) {
+      console.error("Failed to load visitors:", error);
+      setVisitorRequests([]);
+    } finally {
+      if (!silent) setLoadingVisitors(false);
+    }
+  };
+
+  const loadAccessLogs = async (silent = false) => {
+    try {
+      if (!silent) setLoadingLogs(true);
+
+      const data = await getVisitorAccessLogs();
+
+      const normalized = Array.isArray(data)
+        ? data.slice(0, 5).map((log) => ({
+            id: log.id,
+            name: log.visitor_name || "Visitor",
+            unit: `Unit ${log.unit_number || "-"}`,
+            status: log.status,
+            time: new Date(log.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }))
+        : [];
+
+      setAccessLogs(normalized);
+    } catch (error) {
+      console.error("Failed to load logs:", error);
+      setAccessLogs([]);
+    } finally {
+      if (!silent) setLoadingLogs(false);
+    }
+  };
 
   useEffect(() => {
-  loadMaintenance();
-  loadAlerts();
-  loadVisitorRequests();
-  loadAccessLogs();
-}, []);
-const loadVisitorRequests = async () => {
-  try {
-    setLoadingVisitors(true);
+    loadDashboardStats();
+    loadMaintenance();
+    loadAlerts();
+    loadVisitorRequests();
+    loadAccessLogs();
+    loadTechnicians();
 
-   const data = await getAllVisitorRequests();
+    const interval = setInterval(() => {
+      loadDashboardStats();
+      loadMaintenance(true);
+      loadAlerts(true);
+      loadVisitorRequests(true);
+      loadAccessLogs(true);
+    }, 5000);
 
-    const pending = Array.isArray(data)
-      ? data.filter((v) => v.status === "PENDING").slice(0, 5)
-      : [];
+    return () => clearInterval(interval);
+  }, []);
 
-    setVisitorRequests(pending);
-  } catch (error) {
-    console.error("Failed to load visitors:", error);
-    setVisitorRequests([]);
-  } finally {
-    setLoadingVisitors(false);
-  }
-};
-
-const loadAccessLogs = async () => {
-  try {
-    setLoadingLogs(true);
-
-    const data = await getVisitorAccessLogs();
-
-    const normalized = Array.isArray(data)
-      ? data.slice(0, 5).map((log) => ({
-          id: log.id,
-          name: log.visitor_name || "Visitor",
-          unit: `Unit ${log.unit_number || "-"}`,
-          status: log.status,
-          time: new Date(log.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        }))
-      : [];
-
-    setAccessLogs(normalized);
-  } catch (error) {
-    console.error("Failed to load logs:", error);
-    setAccessLogs([]);
-  } finally {
-    setLoadingLogs(false);
-  }
-};
   const openMaintenanceDetails = async (id) => {
     try {
       setLoadingRequestDetails(true);
       setActionError("");
       setActionSuccess("");
-      setStatusValue("");
+
       setTechnicianId("");
 
       const data = await getMaintenanceRequestById(id);
       setSelectedRequest(data);
-      setStatusValue(data.status || "");
-      setTechnicianId(data.assigned_technician_id ? String(data.assigned_technician_id) : "");
+     
+      setTechnicianId(
+        data.assigned_technician_id ? String(data.assigned_technician_id) : ""
+      );
     } catch (error) {
       console.error("Failed to load maintenance request details:", error);
       setActionError("Failed to load request details.");
@@ -251,7 +390,7 @@ const loadAccessLogs = async () => {
 
   const handleAssignTechnician = async () => {
     if (!selectedRequest || !technicianId.trim()) {
-      setActionError("Please enter a technician ID.");
+      setActionError("Please select a technician.");
       return;
     }
 
@@ -267,7 +406,8 @@ const loadAccessLogs = async () => {
 
       setSelectedRequest(updated);
       setActionSuccess("Technician assigned successfully.");
-      await loadMaintenance();
+      await loadMaintenance(true);
+      await loadDashboardStats();
     } catch (error) {
       console.error("Failed to assign technician:", error);
       setActionError(
@@ -278,35 +418,7 @@ const loadAccessLogs = async () => {
     }
   };
 
-  const handleUpdateStatus = async () => {
-    if (!selectedRequest || !statusValue) {
-      setActionError("Please choose a status.");
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      setActionError("");
-      setActionSuccess("");
-
-      const updated = await updateMaintenanceStatus(
-        selectedRequest.id,
-        statusValue
-      );
-
-      setSelectedRequest(updated);
-      setActionSuccess("Status updated successfully.");
-      await loadMaintenance();
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      setActionError(
-        error?.response?.data?.detail || "Failed to update status."
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
+  
   return (
     <PageWrapper>
       <div className="dash-layout">
@@ -339,7 +451,7 @@ const loadAccessLogs = async () => {
 
             <div className="dash-hero-title">
               Good {getGreeting()},<br />
-              Administrator
+              {user?.full_name || "Administrator"}
             </div>
 
             <div className="dash-hero-stats">
@@ -373,30 +485,40 @@ const loadAccessLogs = async () => {
 
           <div className="dash-cards">
             <div className="dash-card">
-              <div className="dash-card-head">
-                <span className="dash-card-title">Recent access</span>
-                <span className="dash-card-more">View all</span>
-              </div>
+  <div className="dash-card-head">
+    <span className="dash-card-title">Staff on shift</span>
+    <span className="dash-card-subtitle">Today</span>
+  </div>
 
-              {loadingLogs ? (
-  <div className="dash-empty">Loading logs...</div>
-) : accessLogs.length === 0 ? (
-  <div className="dash-empty">No activity</div>
-) : (
-  accessLogs.map((item) => (
-    <div key={item.id} className="dash-log-item">
-      <div className="dash-log-info">
-        <span className="dash-log-name">{item.name}</span>
-        <span className="dash-log-unit">
-          {item.unit} · {item.status}
-        </span>
+  <div className="dash-shift-list">
+    {staffShifts.map((staff) => (
+      <div key={staff.id} className="dash-shift-item">
+        <div className="dash-shift-icon">{staff.icon}</div>
+
+        <div className="dash-shift-info">
+          <div className="dash-shift-top">
+            <span className="dash-shift-name">{staff.name}</span>
+            <span
+              className={`dash-shift-status ${
+                staff.status === "On shift" ? "active" : "upcoming"
+              }`}
+            >
+              {staff.status}
+            </span>
+          </div>
+
+          <span className="dash-shift-role">{staff.role}</span>
+          <span className="dash-shift-email">{staff.email}</span>
+
+          <div className="dash-shift-bottom">
+            <span>{staff.shift}</span>
+            <span>{staff.id}</span>
+          </div>
+        </div>
       </div>
-
-      <span className="dash-log-time">{item.time}</span>
-    </div>
-  ))
-)}
-            </div>
+    ))}
+  </div>
+</div>
 
             <div className="dash-card">
               <div className="dash-card-head">
@@ -422,7 +544,8 @@ const loadAccessLogs = async () => {
                       <div className="dash-log-info">
                         <span className="dash-log-name">{item.title}</span>
                         <span className="dash-log-unit">
-                          {item.category} · Unit {item.unitNumber} · {formatPreferredDate(item.preferredDate)}
+                          {item.category} · Unit {item.unitNumber} ·{" "}
+                          {formatPreferredDate(item.preferredDate)}
                         </span>
                       </div>
 
@@ -474,62 +597,75 @@ const loadAccessLogs = async () => {
                   consumption.water.up ? "up" : "down"
                 }`}
               >
-                {consumption.water.up ? "↑" : "↓"} {consumption.water.trend} vs last month
+                {consumption.water.up ? "↑" : "↓"} {consumption.water.trend} vs
+                last month
               </div>
             </div>
           </div>
 
           <div className="dash-rp-section">
-  <div className="dash-rp-title">Alerts</div>
+            <div
+              className="dash-rp-title"
+              onClick={() => navigate(ROUTES.ADMIN_ALERTS)}
+              style={{ cursor: "pointer" }}
+            >
+              Alerts
+            </div>
 
-  {loadingAlerts ? (
-    <div className="dash-empty">Loading alerts...</div>
-  ) : alerts.length === 0 ? (
-    <div className="dash-empty">No alerts</div>
-  ) : (
-    alerts.map((alert) => (
-      <div key={alert.id} className={`dash-rp-alert ${alert.type}`}>
-        <div className="dash-rp-alert-title">{alert.title}</div>
-        <div className="dash-rp-alert-sub">{alert.sub}</div>
-      </div>
-    ))
-  )}
-</div>
+            {loadingAlerts ? (
+              <div className="dash-empty">Loading alerts...</div>
+            ) : alerts.length === 0 ? (
+              <div className="dash-empty">No alerts</div>
+            ) : (
+              alerts.map((alert) => (
+                <button
+                  key={alert.id}
+                  type="button"
+                  className={`dash-rp-alert ${alert.type}`}
+                  onClick={() => navigate(ROUTES.ADMIN_ALERTS)}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div className="dash-rp-alert-title">{alert.title}</div>
+                  <div className="dash-rp-alert-sub">{alert.sub}</div>
+                </button>
+              ))
+            )}
+          </div>
 
           <div className="dash-rp-section">
             <div className="dash-rp-title">Pending visitors</div>
-          {loadingVisitors ? (
-  <div className="dash-empty">Loading visitors...</div>
-) : visitorRequests.length === 0 ? (
-  <div className="dash-empty">No pending visitors</div>
-) : (
-  visitorRequests.map((v) => (
-    <div key={v.id} className="dash-rp-visitor">
-      <div className="dash-rp-avatar">
-        {v.visitor_name?.slice(0, 2).toUpperCase()}
-      </div>
 
-      <span className="dash-rp-vname">
-        {v.visitor_name}
-      </span>
+            {loadingVisitors ? (
+              <div className="dash-empty">Loading visitors...</div>
+            ) : visitorRequests.length === 0 ? (
+              <div className="dash-empty">No pending visitors</div>
+            ) : (
+              visitorRequests.map((v) => (
+                <div key={v.id} className="dash-rp-visitor">
+                  <div className="dash-rp-avatar">
+                    {v.visitor_name?.slice(0, 2).toUpperCase()}
+                  </div>
 
-      <span className={`dash-rp-vbadge ${v.status}`}>
-        {v.status}
-      </span>
-    </div>
-  ))
-)}
-           
+                  <span className="dash-rp-vname">{v.visitor_name}</span>
+
+                  <span className={`dash-rp-vbadge ${v.status}`}>
+                    {v.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {(selectedRequest || loadingRequestDetails) && (
         <div className="dash-modal-overlay" onClick={closeMaintenanceDetails}>
-          <div
-            className="dash-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="dash-modal" onClick={(e) => e.stopPropagation()}>
             <div className="dash-modal-head">
               <h3 className="dash-modal-title">Maintenance request details</h3>
               <button
@@ -549,19 +685,27 @@ const loadAccessLogs = async () => {
                   <div className="dash-modal-grid">
                     <div>
                       <span className="dash-modal-label">Type</span>
-                      <p className="dash-modal-value">{selectedRequest.maintenance_type}</p>
+                      <p className="dash-modal-value">
+                        {selectedRequest.maintenance_type}
+                      </p>
                     </div>
                     <div>
                       <span className="dash-modal-label">Status</span>
-                      <p className="dash-modal-value">{selectedRequest.status}</p>
+                      <p className="dash-modal-value">
+                        {selectedRequest.status}
+                      </p>
                     </div>
                     <div>
                       <span className="dash-modal-label">Unit</span>
-                      <p className="dash-modal-value">{selectedRequest.unit_number}</p>
+                      <p className="dash-modal-value">
+                        {selectedRequest.unit_number}
+                      </p>
                     </div>
                     <div>
                       <span className="dash-modal-label">Preferred date</span>
-                      <p className="dash-modal-value">{selectedRequest.preferred_date}</p>
+                      <p className="dash-modal-value">
+                        {selectedRequest.preferred_date}
+                      </p>
                     </div>
                     <div>
                       <span className="dash-modal-label">Resident</span>
@@ -576,9 +720,12 @@ const loadAccessLogs = async () => {
                       </p>
                     </div>
                     <div>
-                      <span className="dash-modal-label">Assigned technician</span>
+                      <span className="dash-modal-label">
+                        Assigned technician
+                      </span>
                       <p className="dash-modal-value">
-                        {selectedRequest.assigned_technician_username || "Not assigned"}
+                        {selectedRequest.assigned_technician_username ||
+                          "Not assigned"}
                       </p>
                     </div>
                     <div>
@@ -597,51 +744,42 @@ const loadAccessLogs = async () => {
                   </p>
                 </div>
 
-                <div className="dash-modal-section">
-                  <span className="dash-modal-label">Assign technician</span>
-                  <div className="dash-modal-actions-row">
-                    <input
-                      type="number"
-                      className="dash-modal-input"
-                      placeholder="Enter technician ID"
-                      value={technicianId}
-                      onChange={(e) => setTechnicianId(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="dash-modal-btn"
-                      onClick={handleAssignTechnician}
-                      disabled={actionLoading}
-                    >
-                      Assign
-                    </button>
-                  </div>
-                </div>
+               <div className="dash-modal-section">
+  <span className="dash-modal-label">Assign technician</span>
 
-                <div className="dash-modal-section">
-                  <span className="dash-modal-label">Update status</span>
-                  <div className="dash-modal-actions-row">
-                    <select
-                      className="dash-modal-select"
-                      value={statusValue}
-                      onChange={(e) => setStatusValue(e.target.value)}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
+  <div className="dash-tech-picker">
+    {technicians.map((tech) => (
+      <button
+        key={tech.id}
+        type="button"
+        className={`dash-tech-option ${
+          String(technicianId) === String(tech.id) ? "selected" : ""
+        }`}
+        onClick={() => setTechnicianId(String(tech.id))}
+      >
+        <div className="dash-tech-avatar">🛠️</div>
 
-                    <button
-                      type="button"
-                      className="dash-modal-btn dash-modal-btn-secondary"
-                      onClick={handleUpdateStatus}
-                      disabled={actionLoading}
-                    >
-                      Update
-                    </button>
-                  </div>
-                </div>
+        <div className="dash-tech-info">
+          <span className="dash-tech-name">{tech.name}</span>
+          <span className="dash-tech-email">{tech.email}</span>
+        </div>
 
+        <span className="dash-tech-id">#{tech.id}</span>
+      </button>
+    ))}
+  </div>
+
+  <button
+    type="button"
+    className="dash-modal-btn dash-tech-assign-btn"
+    onClick={handleAssignTechnician}
+    disabled={actionLoading}
+  >
+    Assign selected technician
+  </button>
+</div>
+
+                
                 {actionError ? (
                   <div className="dash-modal-feedback dash-modal-error">
                     {actionError}

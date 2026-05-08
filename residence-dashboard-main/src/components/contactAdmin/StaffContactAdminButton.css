@@ -14,25 +14,26 @@
   right: 28px;
   bottom: 28px;
   z-index: 80;
-  border: none;
+  border: 0.5px solid rgba(28, 59, 46, 0.18);
   border-radius: 999px;
-  padding: 14px 20px;
-  background: #143d2b;
+  padding: 13px 19px;
+  background: #1c3b2e;
   color: #f5f0e8;
+  font-weight: 500;
   font-size: 13px;
-  font-weight: 700;
+  letter-spacing: 0.01em;
   line-height: 1;
-  box-shadow: 0 16px 35px rgba(20, 61, 43, 0.25);
+  box-shadow: 0 16px 35px rgba(28, 59, 46, 0.24);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   cursor: pointer;
   transition: all 0.18s ease;
 }
 
 .staff-contact-fab:hover {
   transform: translateY(-2px);
-  background: #1a4d37;
+  background: #244d3c;
 }
 
 .staff-contact-fab-icon {
@@ -44,13 +45,13 @@
   right: 28px;
   bottom: 92px;
   z-index: 120;
-  padding: 14px 18px;
-  border-radius: 16px;
-  background: #143d2b;
+  padding: 13px 17px;
+  border-radius: 14px;
+  background: #1c3b2e;
   color: #f5f0e8;
   font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 16px 35px rgba(20, 61, 43, 0.25);
+  font-weight: 500;
+  box-shadow: 0 16px 35px rgba(28, 59, 46, 0.24);
 }
 
 .staff-contact-overlay {
@@ -67,11 +68,12 @@
 
 .staff-contact-modal {
   width: min(520px, 100%);
-  background: #fffaf0;
-  border-radius: 28px;
-  padding: 26px;
-  border-top: 6px solid #c7a24c;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+  background: #fffdf8;
+  border-radius: 22px;
+  padding: 24px;
+  border: 0.5px solid rgba(28, 59, 46, 0.08);
+  border-top: 5px solid #b8974a;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.22);
 }
 
 .staff-contact-modal.security {
@@ -79,156 +81,223 @@
 }
 
 .staff-contact-modal.technician {
-  border-top-color: #c7a24c;
+  border-top-color: #b8974a;
 }
 
 .staff-contact-head {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .staff-contact-badge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 11px;
+  padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(199, 162, 76, 0.14);
-  color: #8a6a1f;
+  background: rgba(28, 59, 46, 0.08);
+  color: #1c3b2e;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .staff-contact-head h2 {
-  margin: 12px 0 5px;
-  color: #183527;
-  font-size: 18px;
-  font-weight: 800;
+  margin: 11px 0 5px;
+  color: #1c3b2e;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .staff-contact-head p {
   margin: 0;
-  color: #6b7d73;
-  font-size: 13px;
-  font-weight: 500;
+  color: rgba(28, 59, 46, 0.58);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .staff-contact-close {
   border: none;
   background: transparent;
-  color: #183527;
-  font-size: 28px;
+  color: rgba(28, 59, 46, 0.68);
+  font-size: 27px;
   cursor: pointer;
   line-height: 1;
   padding: 0;
+  transition: color 0.15s ease;
+}
+
+.staff-contact-close:hover {
+  color: #1c3b2e;
 }
 
 .staff-contact-field {
-  margin-bottom: 18px;
+  margin-bottom: 15px;
 }
 
 .staff-contact-field label {
   display: block;
-  margin-bottom: 8px;
-  color: #183527;
-  font-size: 13px;
-  font-weight: 700;
+  margin-bottom: 7px;
+  color: rgba(28, 59, 46, 0.62);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .staff-contact-role,
 .staff-contact-field input,
 .staff-contact-field textarea {
   width: 100%;
-  border: none;
+  border: 0.5px solid rgba(28, 59, 46, 0.08);
   outline: none;
-  border-radius: 16px;
-  background: #f2ede3;
-  color: #183527;
-  padding: 14px 15px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 12px;
+  background: #f5f0e8;
+  color: #1c3b2e;
+  padding: 12px 13px;
+  font-size: 13px;
+  font-weight: 400;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.staff-contact-role {
+  color: #1c3b2e;
+  font-weight: 500;
+}
+
+.staff-contact-field input:focus,
+.staff-contact-field textarea:focus {
+  border-color: rgba(28, 59, 46, 0.22);
+  background: #fbf6ec;
 }
 
 .staff-contact-field input::placeholder,
 .staff-contact-field textarea::placeholder {
-  color: #8b8f8c;
+  color: rgba(28, 59, 46, 0.36);
 }
 
 .staff-contact-field textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 118px;
+  line-height: 1.55;
 }
 
 .staff-urgency-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 9px;
 }
 
 .staff-urgency-btn {
-  border: none;
-  border-radius: 16px;
-  padding: 13px;
-  background: #f2ede3;
-  color: #183527;
-  font-size: 13px;
-  font-weight: 700;
+  border: 0.5px solid rgba(28, 59, 46, 0.08);
+  border-radius: 12px;
+  padding: 11px;
+  background: #f5f0e8;
+  color: rgba(28, 59, 46, 0.72);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+.staff-urgency-btn:hover {
+  background: #fbf6ec;
+  color: #1c3b2e;
+}
+
 .staff-urgency-btn.active {
-  background: #183d2d;
+  background: #1c3b2e;
   color: #f5f0e8;
+  border-color: #1c3b2e;
 }
 
 .staff-contact-error {
   margin-bottom: 14px;
   color: #c0392b;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(192, 57, 43, 0.08);
+  border: 0.5px solid rgba(192, 57, 43, 0.14);
+  padding: 10px 12px;
+  border-radius: 10px;
 }
 
 .staff-contact-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .staff-cancel-btn,
 .staff-submit-btn {
   border: none;
-  border-radius: 16px;
-  padding: 13px 18px;
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: 10px;
+  padding: 11px 15px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .staff-cancel-btn {
-  background: #f2ede3;
-  color: #183527;
+  background: #f5f0e8;
+  color: rgba(28, 59, 46, 0.78);
+  border: 0.5px solid rgba(28, 59, 46, 0.08);
 }
 
 .staff-cancel-btn:hover {
-  background: #e8e1d5;
+  background: #ede6da;
+  color: #1c3b2e;
 }
 
 .staff-submit-btn {
-  background: #c7a24c;
-  color: white;
+  background: #1c3b2e;
+  color: #f5f0e8;
 }
 
 .staff-submit-btn:hover {
-  background: #b8923f;
+  background: #244d3c;
 }
 
 .staff-submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+.staff-urgency-btn.low {
+  color: #1c3b2e;
+  border-color: rgba(28, 59, 46, 0.12);
+}
+
+.staff-urgency-btn.low.active {
+  background: #1c3b2e;
+  color: #f5f0e8;
+  border-color: #1c3b2e;
+}
+
+.staff-urgency-btn.medium {
+  color: #8a6a1f;
+  border-color: rgba(138, 106, 31, 0.16);
+}
+
+.staff-urgency-btn.medium.active {
+  background: #8a6a1f;
+  color: #fffdf8;
+  border-color: #8a6a1f;
+}
+
+.staff-urgency-btn.urgent {
+  color: #9f3a32;
+  border-color: rgba(159, 58, 50, 0.16);
+}
+
+.staff-urgency-btn.urgent.active {
+  background: #9f3a32;
+  color: #fffdf8;
+  border-color: #9f3a32;
 }

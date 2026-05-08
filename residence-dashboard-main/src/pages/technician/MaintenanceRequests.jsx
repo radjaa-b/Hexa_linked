@@ -63,13 +63,28 @@ const MaintenanceRequests = () => {
     try {
       const data = await getMaintenanceRequests();
       // map only the field name differences
-      setRequests(data.map(r => ({
-  ...r,
-  id:          r.id,          // already a number, keep it
-  title: r.title ?? r.maintenance_type,
-  submittedBy: { name: r.resident_username ?? "Resident", unit: r.unit_number },
-  submittedAt: r.created_at,
-})));
+     const currentTechnicianId = user?.id;
+
+const assignedOnly = Array.isArray(data)
+  ? data.filter(
+      (r) =>
+        Number(r.assigned_technician_id) ===
+        Number(currentTechnicianId)
+    )
+  : [];
+
+setRequests(
+  assignedOnly.map((r) => ({
+    ...r,
+    id: r.id,
+    title: r.title ?? r.maintenance_type,
+    submittedBy: {
+      name: r.resident_username ?? "Resident",
+      unit: r.unit_number,
+    },
+    submittedAt: r.created_at,
+  }))
+);
 
     } catch (err) {
       setError("Failed to load maintenance requests.");
