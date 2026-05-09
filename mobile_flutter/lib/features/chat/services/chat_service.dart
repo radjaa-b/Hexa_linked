@@ -325,15 +325,29 @@ class ChatService {
     final senderId = '${json['sender_id'] ?? ''}';
     final isMe = senderId.trim() == _currentUserId.trim();
 
-    debugPrint(
-      'MESSAGE MAP => senderId=$senderId | currentUserId=$_currentUserId | isMe=$isMe',
-    );
+    final senderNameRaw = (json['sender_name'] ?? json['sender_username'])
+        ?.toString()
+        .trim();
+
+    final senderUnitRaw = (json['sender_unit'] ?? json['sender_email'])
+        ?.toString()
+        .trim();
+
     final senderName = isMe
         ? _currentUserName
-        : (conversation?.otherUserName ?? 'Resident');
+        : (senderNameRaw != null && senderNameRaw.isNotEmpty
+              ? senderNameRaw
+              : conversation?.otherUserName ?? 'Resident');
+
     final senderUnit = isMe
         ? _currentUserUnit
-        : (conversation?.otherUserUnit ?? 'Resident');
+        : (senderUnitRaw != null && senderUnitRaw.isNotEmpty
+              ? senderUnitRaw
+              : conversation?.otherUserUnit ?? '');
+
+    debugPrint(
+      'MESSAGE MAP => senderId=$senderId | senderName=$senderName | senderUnit=$senderUnit | isMe=$isMe',
+    );
 
     return Message(
       id: '${json['id']}',
