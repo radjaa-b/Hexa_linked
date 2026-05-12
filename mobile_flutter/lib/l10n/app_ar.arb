@@ -1,0 +1,13 @@
+{
+  "profile": "الملف الشخصي",
+  "personalInformation": "المعلومات الشخصية",
+  "settings": "الإعدادات",
+  "language": "اللغة",
+  "pushNotifications": "الإشعارات",
+  "legal": "القوانين",
+  "residenceRules": "قوانين الإقامة",
+  "termsPrivacy": "الشروط والخصوصية",
+  "logout": "تسجيل الخروج",
+  "retry": "إعادة المحاولة",
+  "selectLanguage": "اختر اللغة"
+}

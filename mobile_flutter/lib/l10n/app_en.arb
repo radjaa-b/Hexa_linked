@@ -1,0 +1,13 @@
+{
+  "profile": "Profile",
+  "personalInformation": "Personal Information",
+  "settings": "Settings",
+  "language": "Language",
+  "pushNotifications": "Push notifications",
+  "legal": "Legal",
+  "residenceRules": "Residence Rules",
+  "termsPrivacy": "Terms & Privacy",
+  "logout": "Logout",
+  "retry": "Retry",
+  "selectLanguage": "Select Language"
+}

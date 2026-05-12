@@ -4,6 +4,10 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:resident_app/l10n/app_localizations.dart';
 import 'package:resident_app/core/navigation/app_route.dart';
 import 'package:resident_app/core/navigation/main_navigation_screen.dart';
 import 'package:resident_app/features/auth/screens/activate_account_screen.dart';
@@ -11,9 +15,32 @@ import 'package:resident_app/features/auth/screens/login_screen.dart';
 import 'package:resident_app/features/auth/screens/welcome_screen.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
 
+class AppLocale {
+  static final ValueNotifier<Locale?> notifier = ValueNotifier<Locale?>(null);
+
+  static Future<void> setLocale(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_language_code', languageCode);
+    notifier.value = Locale(languageCode);
+  }
+
+  static Future<void> loadSavedLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final code = prefs.getString('app_language_code');
+
+    if (code == null || code.isEmpty) {
+      notifier.value = null;
+      return;
+    }
+
+    notifier.value = Locale(code);
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  await AppLocale.loadSavedLocale();
 
   final hasResidentSession = await AuthService.isLoggedIn();
   final initialAppLaunch = await _resolveInitialAppLaunch();
@@ -77,43 +104,60 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Residents App',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Roboto',
-      ),
-      initialRoute: _initialAppLaunch.shouldOpen
-          ? _initialAppLaunch.routeName
-          : widget.isLoggedIn
-          ? '/home'
-          : '/welcome',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/home':
-            return fadeSlideRoute(const MainNavigationScreen());
-          case '/welcome':
-            return fadeSlideRoute(const WelcomeScreen());
-          case '/login':
-            return fadeSlideRoute(const LoginScreen());
-          case '/activate':
-            final token =
-                _extractActivationToken(settings.arguments) ??
-                _initialAppLaunch.token;
-            return fadeSlideRoute(ActivateAccountScreen(token: token));
-          default:
-            final fallback = _initialAppLaunch.shouldOpen
-                ? (_initialAppLaunch.routeName == '/activate'
-                      ? ActivateAccountScreen(token: _initialAppLaunch.token)
-                      : const LoginScreen())
-                : widget.isLoggedIn
-                ? const MainNavigationScreen()
-                : const WelcomeScreen();
-            return fadeSlideRoute(fallback);
-        }
+    return ValueListenableBuilder<Locale?>(
+      valueListenable: AppLocale.notifier,
+      builder: (context, locale, _) {
+        return MaterialApp(
+          navigatorKey: _navigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Residents App',
+
+          locale: locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+
+          theme: ThemeData(
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.white,
+            fontFamily: 'Roboto',
+          ),
+          initialRoute: _initialAppLaunch.shouldOpen
+              ? _initialAppLaunch.routeName
+              : widget.isLoggedIn
+              ? '/home'
+              : '/welcome',
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case '/home':
+                return fadeSlideRoute(const MainNavigationScreen());
+              case '/welcome':
+                return fadeSlideRoute(const WelcomeScreen());
+              case '/login':
+                return fadeSlideRoute(const LoginScreen());
+              case '/activate':
+                final token =
+                    _extractActivationToken(settings.arguments) ??
+                    _initialAppLaunch.token;
+                return fadeSlideRoute(ActivateAccountScreen(token: token));
+              default:
+                final fallback = _initialAppLaunch.shouldOpen
+                    ? (_initialAppLaunch.routeName == '/activate'
+                          ? ActivateAccountScreen(
+                              token: _initialAppLaunch.token,
+                            )
+                          : const LoginScreen())
+                    : widget.isLoggedIn
+                    ? const MainNavigationScreen()
+                    : const WelcomeScreen();
+                return fadeSlideRoute(fallback);
+            }
+          },
+        );
       },
     );
   }
@@ -133,21 +177,15 @@ class _AppLaunch {
 
 Future<_AppLaunch> _resolveInitialAppLaunch() async {
   final fromBase = _resolveAppLaunchFromBaseUri();
-  if (fromBase.shouldOpen) {
-    return fromBase;
-  }
+  if (fromBase.shouldOpen) return fromBase;
 
   if (!kIsWeb) {
     try {
       final appLinks = AppLinks();
       final initialUri = await appLinks.getInitialLink();
       final fromMobileLink = _appLaunchFromUri(initialUri);
-      if (fromMobileLink != null) {
-        return fromMobileLink;
-      }
-    } catch (_) {
-      // Ignore unavailable or malformed initial links.
-    }
+      if (fromMobileLink != null) return fromMobileLink;
+    } catch (_) {}
   }
 
   return const _AppLaunch();

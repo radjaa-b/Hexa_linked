@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:resident_app/features/auth/services/auth_service.dart';
 
 class ContactAdminService {
-  static const String _baseUrl = 'http://192.168.1.4:8000';
+  static const String _baseUrl = 'http://192.168.1.20:8000';
 
   static Future<void> sendRequest({
     required String subject,

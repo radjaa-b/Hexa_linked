@@ -53,12 +53,29 @@ const statusStyles = {
 const parseSecuritySource = (entry) => {
   const source = entry.source || "";
 
+  if (source.startsWith("iot_")) {
+    const [rawType, name, unit] = source.split("|");
+    const type = rawType.replace("iot_", "");
+
+    return {
+      id: `security-${entry.id}`,
+      originalId: entry.id,
+      type,
+      name: name || "RFID Resident",
+      unit: unit && unit !== "-" ? unit : "—",
+      gate: entry.gate_id || "—",
+      status: entry.access_status || "granted",
+      timestamp: entry.event_time,
+      method: "RFID / IoT",
+    };
+  }
+
   if (!source.startsWith("manual_")) {
     return {
       id: `security-${entry.id}`,
       originalId: entry.id,
       type: "resident",
-      name: "RFID / IoT entry",
+      name: "RFID Access Event",
       unit: "—",
       gate: entry.gate_id || "—",
       status: entry.access_status || "granted",
@@ -82,7 +99,6 @@ const parseSecuritySource = (entry) => {
     method: "Manual",
   };
 };
-
 const makeManualVisitorLog = (entry) => ({
   id: entry.id,
   visitor_name: entry.name,
@@ -334,8 +350,8 @@ const AccessLog = () => {
           <div className="log-section-card">
             <div className="log-section-head">
               <div>
-                <h3>Manual / resident access</h3>
-                <p>Manual resident and staff entries submitted by security agents.</p>
+               <h3>Resident & RFID Access</h3>
+<p>Resident, staff, and simulated RFID gate activity.</p>
               </div>
 
               <span className="log-section-pill active">

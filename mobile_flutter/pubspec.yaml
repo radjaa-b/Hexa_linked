@@ -26,6 +26,15 @@ dependencies:
   flutter_dotenv: ^5.1.0
   app_links: ^7.0.0
 
+  audioplayers: ^6.1.0
+
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  shared_preferences: ^2.3.3
+
+
+
  
 
 dev_dependencies:
@@ -36,9 +45,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
 
     - .env    
     
-web_socket_channel: ^3.0.1              # ← dotenv file (never commit this to Git)
+           # ← dotenv file (never commit this to Git)
