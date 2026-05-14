@@ -20,6 +20,7 @@ export const ROUTES = {
   SECURITY_ALERTS:    "/security/surveillance",
   SECURITY_INCIDENTS: "/security/incidents",
   SECURITY_NUMBERS: "/security/important-numbers",
+  SECURITY_QR: "/security/visitor-scanner",
 
   // Technician pages
   TECH_MAINTENANCE: "/technician/maintenance",

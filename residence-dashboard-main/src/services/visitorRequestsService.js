@@ -48,17 +48,19 @@ export const markVisitorExited = async (id) => {
   return res.data;
 };
 
+export const scanVisitorPass = async (code) => {
+  const res = await axiosInstance.post(
+    "/visitor-requests/scan",
+    { code }
+  );
 
+  return res.data;
+};
 // -----------------------------
 // Admin
 // -----------------------------
 
-export const getVisitorRequests = async () => {
-  const response = await axiosInstance.get("/visitor-requests");
-  return response.data;
-};
-
 export const getVisitorAccessLogs = async () => {
-  const response = await axiosInstance.get("/admin/visitor-access/logs");
-  return response.data;
+  const res = await axiosInstance.get("/admin/visitor-access/logs");
+  return res.data;
 };

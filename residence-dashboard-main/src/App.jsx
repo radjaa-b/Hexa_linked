@@ -24,6 +24,7 @@ import Visitors from "./pages/security/Visitors";
 import Surveillance from "./pages/security/Surveillance";
 import IncidentLog from "./pages/security/IncidentLog";
 import ImportantNumbers from "./pages/security/ImportantNumbers";
+import QRScanner from "./pages/security/QRScanner";
 
 // Technician pages
 import MaintenanceRequests from "./pages/technician/MaintenanceRequests";
@@ -148,6 +149,15 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route
+  path={ROUTES.SECURITY_QR}
+  element={
+    <ProtectedRoute allowedRoles={[ROLES.SECURITY]}>
+      <QRScanner />
+    </ProtectedRoute>
+  }
+/>
 
         {/* ── Technician routes ── */}
         <Route

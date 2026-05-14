@@ -29,13 +29,19 @@ const navLinks = {
     { label: "Consumption", path: ROUTES.ADMIN_CONSUMPTION },
     { label: "Alerts", path: ROUTES.ADMIN_ALERTS },
   ],
-  [ROLES.SECURITY]: [
-    { label: "Gate control", path: ROUTES.SECURITY_GATE },
-    { label: "Visitors", path: ROUTES.SECURITY_VISITORS },
-    { label: "Surveillance", path: ROUTES.SECURITY_ALERTS },
-    { label: "Incidents", path: ROUTES.SECURITY_INCIDENTS },
-    { label: "Numbers", path: ROUTES.SECURITY_NUMBERS },
-  ],
+[ROLES.SECURITY]: [
+  { label: "Gate control", path: ROUTES.SECURITY_GATE },
+
+  { label: "Visitors", path: ROUTES.SECURITY_VISITORS },
+
+  { label: "QR Scanner", path: ROUTES.SECURITY_QR },
+
+  { label: "Surveillance", path: ROUTES.SECURITY_ALERTS },
+
+  { label: "Incidents", path: ROUTES.SECURITY_INCIDENTS },
+
+  { label: "Numbers", path: ROUTES.SECURITY_NUMBERS },
+],
   [ROLES.TECHNICIAN]: [
     { label: "Maintenance", path: ROUTES.TECH_MAINTENANCE },
     { label: "Energy", path: ROUTES.TECH_ENERGY },
@@ -44,25 +50,9 @@ const navLinks = {
 };
 
 const canReceiveNotifications = (role) =>
-  role === ROLES.ADMIN || role === ROLES.SECURITY;
-
-const isEmergencyNotification = (notification) => {
-  const searchableText = `
-    ${notification.type || ""}
-    ${notification.category || ""}
-    ${notification.title || ""}
-    ${notification.message || ""}
-  `.toLowerCase();
-
-  return (
-    searchableText.includes("sos") ||
-    searchableText.includes("alert") ||
-    searchableText.includes("incident") ||
-    searchableText.includes("emergency") ||
-    searchableText.includes("fire") ||
-    searchableText.includes("gas")
-  );
-};
+  role === ROLES.ADMIN ||
+  role === ROLES.SECURITY ||
+  role === ROLES.TECHNICIAN;
 
 const getNotificationText = (notification) => {
   return `
@@ -73,13 +63,27 @@ const getNotificationText = (notification) => {
   `.toLowerCase();
 };
 
+const isEmergencyNotification = (notification) => {
+  const text = getNotificationText(notification);
+
+  return (
+    text.includes("sos") ||
+    text.includes("alert") ||
+    text.includes("incident") ||
+    text.includes("emergency") ||
+    text.includes("fire") ||
+    text.includes("gas")
+  );
+};
+
 const isVisitorNotification = (notification) => {
   const text = getNotificationText(notification);
 
   return (
     text.includes("visitor") ||
     text.includes("visitor request") ||
-    text.includes("access request")
+    text.includes("access request") ||
+    text.includes("visitor access")
   );
 };
 
@@ -89,7 +93,8 @@ const isMaintenanceNotification = (notification) => {
   return (
     text.includes("maintenance") ||
     text.includes("repair") ||
-    text.includes("technician")
+    text.includes("technician") ||
+    text.includes("maintenance request")
   );
 };
 
@@ -100,8 +105,38 @@ const isContactAdminNotification = (notification) => {
     text.includes("contact admin") ||
     text.includes("contact") ||
     text.includes("message from resident") ||
-    text.includes("admin request")
+    text.includes("admin request") ||
+    text.includes("resident message")
   );
+};
+
+const getSoundTypeForNotification = (notification, role) => {
+  if (isEmergencyNotification(notification)) {
+    return "sos";
+  }
+
+  if (role === ROLES.SECURITY && isVisitorNotification(notification)) {
+    return "visitor";
+  }
+
+  if (role === ROLES.TECHNICIAN && isMaintenanceNotification(notification)) {
+    return "maintenance";
+  }
+
+  if (role === ROLES.ADMIN && isContactAdminNotification(notification)) {
+    return "contact";
+  }
+
+  return null;
+};
+
+const getNotificationIcon = (notification) => {
+  if (isEmergencyNotification(notification)) return "🚨";
+  if (isVisitorNotification(notification)) return "🪪";
+  if (isMaintenanceNotification(notification)) return "🛠️";
+  if (isContactAdminNotification(notification)) return "💬";
+
+  return "🔔";
 };
 
 const Topbar = ({ currentPath }) => {
@@ -112,8 +147,8 @@ const Topbar = ({ currentPath }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [sosSoundEnabled, setSosSoundEnabled] = useState(() => {
-  return localStorage.getItem("sosSoundEnabled") === "true";
-});
+    return localStorage.getItem("sosSoundEnabled") === "true";
+  });
 
   const notifRef = useRef(null);
   const knownNotificationIdsRef = useRef(new Set());
@@ -131,44 +166,52 @@ const Topbar = ({ currentPath }) => {
     : "??";
 
   const loadNotifications = async () => {
-  if (!canReceiveNotifications(role)) return;
+    if (!canReceiveNotifications(role)) return;
 
-  try {
-    const [notifData, countData] = await Promise.all([
-      getMyNotifications(),
-      getUnreadNotificationCount(),
-    ]);
+    try {
+      const [notifData, countData] = await Promise.all([
+        getMyNotifications(),
+        getUnreadNotificationCount(),
+      ]);
 
-    const currentIds = new Set(notifData.map((notif) => String(notif.id)));
+      const currentIds = new Set(notifData.map((notif) => String(notif.id)));
 
-    const newUnreadEmergencyNotifications = notifData.filter((notif) => {
-      const notifId = String(notif.id);
+      const newUnreadNotifications = notifData.filter((notif) => {
+        const notifId = String(notif.id);
 
-      return (
-        !notif.is_read &&
-        isEmergencyNotification(notif) &&
-        !knownNotificationIdsRef.current.has(notifId)
-      );
-    });
+        return (
+          !notif.is_read &&
+          !knownNotificationIdsRef.current.has(notifId)
+        );
+      });
 
-    if (didInitialNotificationLoadRef.current) {
-      if (newUnreadEmergencyNotifications.length > 0) {
-        playSosAlarmSound();
+      if (didInitialNotificationLoadRef.current) {
+        const soundToPlay = newUnreadNotifications
+          .map((notif) => getSoundTypeForNotification(notif, role))
+          .find(Boolean);
+
+        if (soundToPlay === "sos") {
+          playSosAlarmSound();
+        } else if (soundToPlay) {
+          playNotificationSound(soundToPlay);
+        }
+      } else {
+        didInitialNotificationLoadRef.current = true;
       }
-    } else {
-      didInitialNotificationLoadRef.current = true;
+
+      knownNotificationIdsRef.current = currentIds;
+
+      setNotifications(notifData);
+      setUnreadCount(countData);
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
     }
-
-    knownNotificationIdsRef.current = currentIds;
-
-    setNotifications(notifData);
-    setUnreadCount(countData);
-  } catch (error) {
-    console.error("Failed to load notifications:", error);
-  }
-};
+  };
 
   useEffect(() => {
+    knownNotificationIdsRef.current = new Set();
+    didInitialNotificationLoadRef.current = false;
+
     loadNotifications();
 
     const interval = setInterval(() => {
@@ -190,16 +233,16 @@ const Topbar = ({ currentPath }) => {
   }, []);
 
   useEffect(() => {
-  if (sosSoundEnabled && canReceiveNotifications(role)) {
-    enableSosAlarmSound();
-  }
-}, [sosSoundEnabled, role]);
+    if (sosSoundEnabled && canReceiveNotifications(role)) {
+      enableSosAlarmSound();
+    }
+  }, [sosSoundEnabled, role]);
 
   const handleEnableSosSound = () => {
-  enableSosAlarmSound();
-  localStorage.setItem("sosSoundEnabled", "true");
-  setSosSoundEnabled(true);
-};
+    enableSosAlarmSound();
+    localStorage.setItem("sosSoundEnabled", "true");
+    setSosSoundEnabled(true);
+  };
 
   const handleLogout = () => {
     clearAuth();
@@ -216,11 +259,42 @@ const Topbar = ({ currentPath }) => {
       setIsNotifOpen(false);
 
       if (role === ROLES.ADMIN) {
-        navigate(ROUTES.ADMIN_ALERTS);
+        if (isContactAdminNotification(notification)) {
+          navigate(ROUTES.ADMIN_MESSAGES);
+          return;
+        }
+
+        if (isEmergencyNotification(notification)) {
+          navigate(ROUTES.ADMIN_ALERTS);
+          return;
+        }
+
+        navigate(ROUTES.ADMIN_DASHBOARD);
+        return;
       }
 
       if (role === ROLES.SECURITY) {
-        navigate(ROUTES.SECURITY_INCIDENTS);
+        if (isVisitorNotification(notification)) {
+          navigate(ROUTES.SECURITY_VISITORS);
+          return;
+        }
+
+        if (isEmergencyNotification(notification)) {
+          navigate(ROUTES.SECURITY_INCIDENTS);
+          return;
+        }
+
+        navigate(ROUTES.SECURITY_GATE);
+        return;
+      }
+
+      if (role === ROLES.TECHNICIAN) {
+        if (isMaintenanceNotification(notification)) {
+          navigate(ROUTES.TECH_MAINTENANCE);
+          return;
+        }
+
+        navigate(ROUTES.TECH_MAINTENANCE);
       }
     } catch (error) {
       console.error("Failed to open notification:", error);
@@ -278,7 +352,9 @@ const Topbar = ({ currentPath }) => {
                 sosSoundEnabled ? "enabled" : ""
               }`}
             >
-              {sosSoundEnabled ? "🔊 SOS Sound Enabled" : "🔊 Enable SOS Sound"}
+              {sosSoundEnabled
+                ? "🔊 Sounds Enabled"
+                : "🔊 Enable Sounds"}
             </button>
 
             <div className="tb-notification-wrapper" ref={notifRef}>
@@ -315,7 +391,7 @@ const Topbar = ({ currentPath }) => {
 
                   {notifications.length === 0 ? (
                     <div className="tb-notif-empty">
-                      No emergency notifications.
+                      No notifications.
                     </div>
                   ) : (
                     <div className="tb-notif-list">
@@ -328,7 +404,9 @@ const Topbar = ({ currentPath }) => {
                           onClick={() => handleNotificationClick(notification)}
                           type="button"
                         >
-                          <div className="tb-notif-icon">🚨</div>
+                          <div className="tb-notif-icon">
+                            {getNotificationIcon(notification)}
+                          </div>
 
                           <div className="tb-notif-content">
                             <strong>{notification.title}</strong>
