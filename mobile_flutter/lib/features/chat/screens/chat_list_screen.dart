@@ -5,6 +5,7 @@ import 'package:resident_app/features/chat/screens/chat_screen.dart';
 import 'package:resident_app/features/chat/services/chat_service.dart';
 import 'package:resident_app/features/chat/widgets/conversation_tile.dart';
 import 'package:resident_app/features/contact_admin/services/contact_admin_service.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class _C {
   static const forest = Color(0xFF1C3B2E);
@@ -77,10 +78,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Future<void> _openGroupChat() async {
+    final t = AppLocalizations.of(context)!;
+
     if (_groupConversation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Residence chat is still loading.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.residenceChatLoading)));
       return;
     }
 
@@ -93,8 +96,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       MaterialPageRoute(
         builder: (_) => ChatScreen(
           conversationId: _groupConversation!.id,
-          title: 'Residence Chat',
-          subtitle: 'All residents',
+          title: t.residenceChat,
+          subtitle: t.groupChatResidents,
           isGroup: true,
         ),
       ),
@@ -160,17 +163,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   String _formatErrorMessage(Object error) {
+    final t = AppLocalizations.of(context)!;
     final raw = error.toString().trim();
 
     if (raw.startsWith('Exception: ')) {
       return raw.replaceFirst('Exception: ', '');
     }
 
-    return raw.isEmpty ? 'Something went wrong.' : raw;
+    return raw.isEmpty ? t.somethingWentWrong : raw;
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: _C.pageBg,
       body: Column(
@@ -192,23 +198,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Messages',
-                        style: TextStyle(
+                        t.messages,
+                        style: const TextStyle(
                           color: _C.champagne,
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'Group & direct messages',
-                        style: TextStyle(color: _C.sage, fontSize: 13),
+                        t.groupDirectMessages,
+                        style: const TextStyle(color: _C.sage, fontSize: 13),
                       ),
                     ],
                   ),
@@ -301,22 +307,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Residence Chat',
-                                    style: TextStyle(
+                                    t.residenceChat,
+                                    style: const TextStyle(
                                       color: _C.champagne,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Group chat for all residents',
-                                    style: TextStyle(
+                                    t.groupChatResidents,
+                                    style: const TextStyle(
                                       color: _C.sage,
                                       fontSize: 13,
                                     ),
@@ -337,11 +343,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     ),
                   ),
 
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 28, 20, 12),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
                     child: Text(
-                      'DIRECT MESSAGES',
-                      style: TextStyle(
+                      t.directMessages,
+                      style: const TextStyle(
                         color: _C.textGray,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -361,7 +367,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     )
                   else if (_conversations.isEmpty)
-                    _emptyDms()
+                    _emptyDms(t)
                   else
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -419,7 +425,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
-  Widget _emptyDms() {
+  Widget _emptyDms(AppLocalizations t) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -435,9 +441,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: const Icon(Icons.chat_outlined, color: _C.gold, size: 28),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No direct messages yet',
-              style: TextStyle(
+            Text(
+              t.noDirectMessagesYet,
+              style: const TextStyle(
                 color: _C.textDark,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -446,9 +452,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
             const SizedBox(height: 6),
             GestureDetector(
               onTap: _openNewDm,
-              child: const Text(
-                'Tap the pencil icon to start one',
-                style: TextStyle(color: _C.gold, fontSize: 13),
+              child: Text(
+                t.tapPencilStartConversation,
+                style: const TextStyle(color: _C.gold, fontSize: 13),
               ),
             ),
           ],
@@ -535,6 +541,8 @@ class _NewDmSheetState extends State<_NewDmSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -556,13 +564,13 @@ class _NewDmSheetState extends State<_NewDmSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
                 Text(
-                  'New Message',
-                  style: TextStyle(
+                  t.newMessage,
+                  style: const TextStyle(
                     color: _C.textDark,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -583,16 +591,16 @@ class _NewDmSheetState extends State<_NewDmSheet> {
               child: TextField(
                 controller: _searchCtrl,
                 style: const TextStyle(color: _C.textDark, fontSize: 14),
-                decoration: const InputDecoration(
-                  hintText: 'Search by name or unit…',
-                  hintStyle: TextStyle(color: _C.textGray, fontSize: 14),
-                  prefixIcon: Icon(
+                decoration: InputDecoration(
+                  hintText: t.searchByNameOrUnit,
+                  hintStyle: const TextStyle(color: _C.textGray, fontSize: 14),
+                  prefixIcon: const Icon(
                     Icons.search_rounded,
                     color: _C.textGray,
                     size: 20,
                   ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
@@ -610,10 +618,10 @@ class _NewDmSheetState extends State<_NewDmSheet> {
                     ),
                   )
                 : _filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'No residents found',
-                      style: TextStyle(color: _C.textGray),
+                      t.noResidentsFound,
+                      style: const TextStyle(color: _C.textGray),
                     ),
                   )
                 : ListView.builder(
@@ -727,15 +735,15 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   }
 
   Future<void> _submit() async {
+    final t = AppLocalizations.of(context)!;
+
     final subject = _subjectCtrl.text.trim();
     final message = _messageCtrl.text.trim();
 
     if (subject.isEmpty || message.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in both subject and message.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.fillSubjectMessage)));
       return;
     }
 
@@ -767,13 +775,14 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
   }
 
   String _formatErrorMessage(Object error) {
+    final t = AppLocalizations.of(context)!;
     final raw = error.toString().trim();
 
     if (raw.startsWith('Exception: ')) {
       return raw.replaceFirst('Exception: ', '');
     }
 
-    return raw.isEmpty ? 'Failed to send request.' : raw;
+    return raw.isEmpty ? t.failedSendRequest : raw;
   }
 
   Color _urgencyColor(String u) {
@@ -782,8 +791,15 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
     return _C.low;
   }
 
+  String _urgencyLabel(AppLocalizations t, String u) {
+    if (u == 'Urgent') return t.urgent;
+    if (u == 'Medium') return t.medium;
+    return t.low;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -794,12 +810,12 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(24, 28, 24, 24 + bottom),
-        child: _submitted ? _successState() : _formState(),
+        child: _submitted ? _successState(t) : _formState(t),
       ),
     );
   }
 
-  Widget _successState() => Column(
+  Widget _successState(AppLocalizations t) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
@@ -812,18 +828,18 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
         child: const Icon(Icons.check_rounded, color: _C.low, size: 32),
       ),
       const SizedBox(height: 16),
-      const Text(
-        'Message sent!',
-        style: TextStyle(
+      Text(
+        t.messageSent,
+        style: const TextStyle(
           color: _C.textDark,
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
       ),
       const SizedBox(height: 8),
-      const Text(
-        'The admin will get back to you soon.',
-        style: TextStyle(color: _C.textGray, fontSize: 14),
+      Text(
+        t.adminReplySoon,
+        style: const TextStyle(color: _C.textGray, fontSize: 14),
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 24),
@@ -837,9 +853,9 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.center,
-          child: const Text(
-            'Done',
-            style: TextStyle(
+          child: Text(
+            t.done,
+            style: const TextStyle(
               color: _C.champagne,
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -850,7 +866,7 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
     ],
   );
 
-  Widget _formState() => Column(
+  Widget _formState(AppLocalizations t) => Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -881,21 +897,21 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Contact Admin',
-                  style: TextStyle(
+                  t.contactAdmin,
+                  style: const TextStyle(
                     color: _C.textDark,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
-                  'We\'ll get back to you as soon as possible',
-                  style: TextStyle(color: _C.textGray, fontSize: 12),
+                  t.contactAdminSubtitle,
+                  style: const TextStyle(color: _C.textGray, fontSize: 12),
                 ),
               ],
             ),
@@ -903,9 +919,9 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
         ],
       ),
       const SizedBox(height: 24),
-      const Text(
-        'Urgency level',
-        style: TextStyle(
+      Text(
+        t.urgencyLevel,
+        style: const TextStyle(
           color: _C.textDark,
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -935,7 +951,7 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  level,
+                  _urgencyLabel(t, level),
                   style: TextStyle(
                     color: selected ? color : _C.textGray,
                     fontSize: 13,
@@ -948,35 +964,27 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
         }).toList(),
       ),
       const SizedBox(height: 20),
-      const Text(
-        'Subject',
-        style: TextStyle(
+      Text(
+        t.subject,
+        style: const TextStyle(
           color: _C.textDark,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
       ),
       const SizedBox(height: 8),
-      _inputField(
-        controller: _subjectCtrl,
-        hint: 'e.g. Noise complaint, Maintenance issue…',
-        maxLines: 1,
-      ),
+      _inputField(controller: _subjectCtrl, hint: t.subjectHint, maxLines: 1),
       const SizedBox(height: 16),
-      const Text(
-        'Message',
-        style: TextStyle(
+      Text(
+        t.message,
+        style: const TextStyle(
           color: _C.textDark,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
       ),
       const SizedBox(height: 8),
-      _inputField(
-        controller: _messageCtrl,
-        hint: 'Describe your issue in detail…',
-        maxLines: 5,
-      ),
+      _inputField(controller: _messageCtrl, hint: t.messageHint, maxLines: 5),
       const SizedBox(height: 24),
       GestureDetector(
         onTap: _submitting ? null : _submit,
@@ -998,9 +1006,9 @@ class _ContactAdminSheetState extends State<_ContactAdminSheet> {
                     strokeWidth: 2,
                   ),
                 )
-              : const Text(
-                  'Send to Admin',
-                  style: TextStyle(
+              : Text(
+                  t.sendToAdmin,
+                  style: const TextStyle(
                     color: _C.champagne,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

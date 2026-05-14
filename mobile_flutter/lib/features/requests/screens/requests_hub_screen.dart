@@ -10,12 +10,15 @@ import '../services/requests_service.dart';
 import '../models/maintenance_request.dart';
 import '../models/visitor_request.dart';
 import '../models/booking_request.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class RequestsHubScreen extends StatelessWidget {
   const RequestsHubScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: SafeArea(
@@ -48,22 +51,25 @@ class RequestsHubScreen extends StatelessWidget {
                         size: 20,
                       ),
                     ),
+
                     const SizedBox(width: 12),
-                    const Expanded(
+
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Requests',
-                            style: TextStyle(
+                            t.requests,
+                            style: const TextStyle(
                               color: AppColors.parchment,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+
                           Text(
-                            'Submit & track your requests',
-                            style: TextStyle(
+                            t.submitTrackRequests,
+                            style: const TextStyle(
                               color: AppColors.mutedGreen,
                               fontSize: 12,
                             ),
@@ -81,22 +87,25 @@ class RequestsHubScreen extends StatelessWidget {
                   children: [
                     RequestHubCard(
                       icon: Icons.build_outlined,
-                      title: 'Maintenance Request',
-                      subtitle: 'Report an issue or request a repair.',
+                      title: t.maintenanceRequest,
+                      subtitle: t.reportIssueRepair,
                       accentColor: AppColors.gold,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MaintenanceScreen(),
-                        ),
-                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MaintenanceScreen(),
+                          ),
+                        );
+                      },
                     ),
+
                     const SizedBox(height: 14),
 
                     RequestHubCard(
                       icon: Icons.badge_outlined,
-                      title: 'Visitor Pass',
-                      subtitle: 'Register a visitor.',
+                      title: t.visitorPass,
+                      subtitle: t.registerVisitor,
                       accentColor: AppColors.teal,
                       onTap: () async {
                         await Navigator.push(
@@ -114,42 +123,48 @@ class RequestsHubScreen extends StatelessWidget {
                         );
                       },
                     ),
+
                     const SizedBox(height: 14),
 
                     RequestHubCard(
                       icon: Icons.meeting_room_outlined,
-                      title: 'Book Shared Area',
-                      subtitle: 'Reserve shared spaces.',
+                      title: t.bookSharedArea,
+                      subtitle: t.reserveSharedSpaces,
                       accentColor: AppColors.darkGreen,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const BookingScreen(),
-                        ),
-                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BookingScreen(),
+                          ),
+                        );
+                      },
                     ),
+
                     const SizedBox(height: 14),
 
                     RequestHubCard(
                       icon: Icons.local_parking_rounded,
-                      title: 'Parking Lot',
-                      subtitle: 'Check parking spots.',
+                      title: t.parkingLot,
+                      subtitle: t.checkParkingSpots,
                       accentColor: AppColors.teal,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ParkingScreen(),
-                        ),
-                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ParkingScreen(),
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 28),
 
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Activity Overview',
-                        style: TextStyle(
+                        t.activityOverview,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: AppColors.darkGreen,
@@ -186,8 +201,8 @@ class _ActivityCardState extends State<_ActivityCard> {
   bool _showOpenRequests = false;
 
   bool _showBookings = false;
-  List<BookingRequest> _bookingRequests = [];
 
+  List<BookingRequest> _bookingRequests = [];
   List<VisitorRequest> _visitorRequests = [];
   List<MaintenanceRequest> _maintenanceRequests = [];
 
@@ -204,7 +219,9 @@ class _ActivityCardState extends State<_ActivityCard> {
       );
 
       if (session == null) {
-        if (mounted) setState(() => _loading = false);
+        if (mounted) {
+          setState(() => _loading = false);
+        }
         return;
       }
 
@@ -261,7 +278,9 @@ class _ActivityCardState extends State<_ActivityCard> {
     } catch (e) {
       debugPrint('Activity overview load failed: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -269,16 +288,21 @@ class _ActivityCardState extends State<_ActivityCard> {
     switch (status.toUpperCase()) {
       case 'APPROVED':
         return Colors.green;
+
       case 'REJECTED':
         return Colors.red;
+
       case 'PENDING':
         return Colors.orange;
+
       case 'ARRIVED':
         return AppColors.teal;
+
       case 'EXITED':
       case 'CANCELLED':
       case 'EXPIRED':
         return Colors.grey;
+
       default:
         return AppColors.darkGreen;
     }
@@ -309,7 +333,9 @@ class _ActivityCardState extends State<_ActivityCard> {
               fontSize: 13,
             ),
           ),
+
           const SizedBox(height: 5),
+
           Text(
             subtitle,
             style: const TextStyle(
@@ -318,7 +344,9 @@ class _ActivityCardState extends State<_ActivityCard> {
               fontWeight: FontWeight.w500,
             ),
           ),
+
           const SizedBox(height: 8),
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -341,6 +369,8 @@ class _ActivityCardState extends State<_ActivityCard> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     if (_loading) {
       return Container(
         width: double.infinity,
@@ -385,22 +415,25 @@ class _ActivityCardState extends State<_ActivityCard> {
                 },
                 child: _ActivityStatRow(
                   icon: Icons.badge_outlined,
-                  label: 'Visitor Passes',
+                  label: t.visitorPasses,
                   value: _visitorRequests.length,
                   max: 10,
                   color: AppColors.teal,
                 ),
               ),
+
               if (_showVisitors) ...[
                 const SizedBox(height: 8),
+
                 if (_visitorRequests.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      'No visitor requests yet',
-                      style: TextStyle(color: AppColors.mutedGreen),
+                      t.noVisitorRequestsYet,
+                      style: const TextStyle(color: AppColors.mutedGreen),
                     ),
                   ),
+
                 ..._visitorRequests.map(
                   (v) => _miniRequestCard(
                     title: v.visitorName,
@@ -431,22 +464,25 @@ class _ActivityCardState extends State<_ActivityCard> {
                 },
                 child: _ActivityStatRow(
                   icon: Icons.meeting_room_outlined,
-                  label: 'Shared Area Bookings',
+                  label: t.sharedAreaBookings,
                   value: _bookingRequests.length,
                   max: 2,
                   color: AppColors.darkGreen,
                 ),
               ),
+
               if (_showBookings) ...[
                 const SizedBox(height: 8),
+
                 if (_bookingRequests.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      'No shared area bookings yet',
-                      style: TextStyle(color: AppColors.mutedGreen),
+                      t.noSharedAreaBookingsYet,
+                      style: const TextStyle(color: AppColors.mutedGreen),
                     ),
                   ),
+
                 ..._bookingRequests.map(
                   (b) => _miniRequestCard(
                     title: b.areaName,
@@ -478,25 +514,28 @@ class _ActivityCardState extends State<_ActivityCard> {
                 },
                 child: _ActivityStatRow(
                   icon: Icons.assignment_outlined,
-                  label: 'Open Requests',
+                  label: t.openRequests,
                   value: _openRequests,
                   max: 10,
                   color: AppColors.gold,
                 ),
               ),
+
               if (_showOpenRequests) ...[
                 const SizedBox(height: 8),
+
                 if (openMaintenance.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
                     child: Text(
-                      'No open maintenance requests',
-                      style: TextStyle(color: AppColors.mutedGreen),
+                      t.noOpenMaintenanceRequests,
+                      style: const TextStyle(color: AppColors.mutedGreen),
                     ),
                   ),
+
                 ...openMaintenance.map(
                   (r) => _miniRequestCard(
-                    title: 'Maintenance Request',
+                    title: t.maintenanceRequest,
                     subtitle: r.category,
                     status: r.status,
                   ),
@@ -542,7 +581,9 @@ class _ActivityStatRow extends StatelessWidget {
               ),
               child: Icon(icon, color: color, size: 20),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: Text(
                 label,
@@ -553,6 +594,7 @@ class _ActivityStatRow extends StatelessWidget {
                 ),
               ),
             ),
+
             Text(
               '$value / $max',
               style: TextStyle(
@@ -563,7 +605,9 @@ class _ActivityStatRow extends StatelessWidget {
             ),
           ],
         ),
+
         const SizedBox(height: 10),
+
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(

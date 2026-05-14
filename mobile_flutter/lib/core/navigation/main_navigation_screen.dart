@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:resident_app/core/navigation/widgets/resident_bottom_bar.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 import 'package:resident_app/features/home/screens/resident_home_screen.dart';
 import 'package:resident_app/features/chat/screens/chat_list_screen.dart';
@@ -20,6 +21,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _pageIndex = 0;
 
   Future<void> _openEmergencyScreen() async {
+    final t = AppLocalizations.of(context)!;
+
     HapticFeedback.heavyImpact();
 
     final sent = await showDialog<bool>(
@@ -30,9 +33,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     if (sent == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incident reported successfully.'),
-          backgroundColor: Color(0xFF1C3B2E),
+        SnackBar(
+          content: Text(t.incidentReportedSuccessfully),
+          backgroundColor: const Color(0xFF1C3B2E),
         ),
       );
     }
@@ -40,30 +43,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       extendBody: true,
+
       body: IndexedStack(
         index: _pageIndex,
-        children: [
-          const ResidentHomeScreen(), // 0 — Home
-          const ChatListScreen(), // 1 — Chat
-          const RequestsHubScreen(), // 2 — Requests
-          const ProfileScreen(), // 3 — Profile
+        children: const [
+          ResidentHomeScreen(), // 0 — Home
+          ChatListScreen(), // 1 — Chat
+          RequestsHubScreen(), // 2 — Requests
+          ProfileScreen(), // 3 — Profile
         ],
       ),
+
       bottomNavigationBar: ResidentBottomBar(
         currentIndex: _pageIndex,
-        onTabSelected: (index) => setState(() => _pageIndex = index),
+
+        onTabSelected: (index) {
+          setState(() => _pageIndex = index);
+        },
+
         onEmergencyTap: _openEmergencyScreen,
-        items: const [
-          ResidentBottomBarItem(icon: Icons.home_rounded, label: 'Home'),
-          ResidentBottomBarItem(icon: Icons.chat_bubble_rounded, label: 'Chat'),
+
+        items: [
+          ResidentBottomBarItem(icon: Icons.home_rounded, label: t.home),
+
+          ResidentBottomBarItem(icon: Icons.chat_bubble_rounded, label: t.chat),
+
           ResidentBottomBarItem(
             icon: Icons.assignment_rounded,
-            label: 'Requests',
+            label: t.requests,
           ),
-          ResidentBottomBarItem(icon: Icons.person_rounded, label: 'Profile'),
+
+          ResidentBottomBarItem(icon: Icons.person_rounded, label: t.profile),
         ],
       ),
     );

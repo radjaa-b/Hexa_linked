@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 import 'package:resident_app/features/auth/services/auth_service.dart';
 import 'package:resident_app/features/consumption/widgets/consumption_preview_card.dart';
@@ -59,6 +60,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
   Future<void> _initializeAnnouncements() async {
     final session = await AuthService.getStoredSession();
+
     if (mounted) {
       setState(() {
         _currentUserId = session?.claims.subject;
@@ -83,6 +85,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
     try {
       final announcements = await _homeService.fetchAnnouncements();
+
       if (!mounted) return;
 
       setState(() {
@@ -91,6 +94,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
       });
     } catch (error) {
       final message = _formatErrorMessage(error);
+
       if (!mounted) return;
 
       setState(() {
@@ -117,6 +121,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
       final session = await AuthService.getStoredSession(
         requiredRole: 'resident',
       );
+
       if (session == null) return;
 
       final requests = await RequestsService().getMaintenanceRequests(
@@ -135,7 +140,9 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
     } catch (_) {
       // fail silently
     } finally {
-      if (mounted) setState(() => _loadingRequest = false);
+      if (mounted) {
+        setState(() => _loadingRequest = false);
+      }
     }
   }
 
@@ -145,6 +152,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
   bool _canManageAnnouncement(AnnouncementModel announcement) {
     final isAdmin = (_currentUserRole ?? '').toLowerCase() == 'admin';
+
     final isOwner =
         _currentUserId != null &&
         announcement.authorId != null &&
@@ -154,6 +162,8 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
   }
 
   Future<void> _showAnnouncementSheet({AnnouncementModel? announcement}) async {
+    final t = AppLocalizations.of(context)!;
+
     final didSave = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -167,33 +177,32 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
     if (didSave != true || !mounted) return;
 
     await _loadAnnouncements(showLoader: false);
+
     if (!mounted) return;
 
     _showSnackBar(
-      announcement == null
-          ? 'Announcement posted successfully.'
-          : 'Announcement updated successfully.',
+      announcement == null ? t.announcementPosted : t.announcementUpdated,
     );
   }
 
   Future<void> _handleDeleteAnnouncement(AnnouncementModel announcement) async {
+    final t = AppLocalizations.of(context)!;
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete announcement?'),
-          content: const Text(
-            'This will permanently remove this announcement.',
-          ),
+          title: Text(t.deleteAnnouncementQuestion),
+          content: Text(t.deleteAnnouncementMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(t.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-              child: const Text('Delete'),
+              child: Text(t.delete),
             ),
           ],
         );
@@ -206,14 +215,17 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
     try {
       await _homeService.deleteAnnouncement(announcementId: announcement.id);
+
       if (!mounted) return;
 
       await _loadAnnouncements(showLoader: false);
+
       if (!mounted) return;
 
-      _showSnackBar('Announcement deleted.');
+      _showSnackBar(t.announcementDeleted);
     } catch (error) {
       if (!mounted) return;
+
       _showSnackBar(_formatErrorMessage(error), isError: true);
     } finally {
       if (mounted) {
@@ -235,13 +247,17 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
   String _formatErrorMessage(Object error) {
     final raw = error.toString().trim();
+
     if (raw.startsWith('Exception: ')) {
       return raw.replaceFirst('Exception: ', '');
     }
+
     return raw;
   }
 
   Widget _buildAnnouncementsSection() {
+    final t = AppLocalizations.of(context)!;
+
     if (_loadingAnnouncements) {
       return const _AnnouncementsStatusCard(
         child: SizedBox(
@@ -258,9 +274,9 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Unable to load announcements.',
-              style: TextStyle(
+            Text(
+              t.unableLoadAnnouncements,
+              style: const TextStyle(
                 color: Color(0xFF1A1A1A),
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -284,7 +300,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
                 foregroundColor: const Color(0xFF1C3B2E),
                 side: const BorderSide(color: Color(0xFF1C3B2E)),
               ),
-              child: const Text('Retry'),
+              child: Text(t.retry),
             ),
           ],
         ),
@@ -292,22 +308,22 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
     }
 
     if (_announcements.isEmpty) {
-      return const _AnnouncementsStatusCard(
+      return _AnnouncementsStatusCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'No announcements yet',
-              style: TextStyle(
+              t.noAnnouncementsYet,
+              style: const TextStyle(
                 color: Color(0xFF1A1A1A),
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Be the first resident to share an update with the community.',
-              style: TextStyle(
+              t.firstResidentAnnouncement,
+              style: const TextStyle(
                 color: Color(0xFF6F6A61),
                 fontSize: 13,
                 height: 1.4,
@@ -349,6 +365,8 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       body: RefreshIndicator(
@@ -365,52 +383,52 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen>
               const SliverToBoxAdapter(child: _GreetingHeader()),
               SliverToBoxAdapter(
                 child: _SectionHeader(
-                  title: 'Announcements',
-                  actionLabel: '+ Add',
+                  title: t.announcements,
+                  actionLabel: t.addAnnouncement,
                   onAction: _mutatingAnnouncements
                       ? null
                       : () => _showAnnouncementSheet(),
                 ),
               ),
               SliverToBoxAdapter(child: _buildAnnouncementsSection()),
-              const SliverToBoxAdapter(
-                child: _SectionHeader(title: 'Your Day at a Glance'),
+              SliverToBoxAdapter(
+                child: _SectionHeader(title: t.yourDayAtGlance),
               ),
               SliverToBoxAdapter(
                 child: GlanceCard(
                   items: [
-                    const GlanceItemModel(
+                    GlanceItemModel(
                       icon: Icons.event_available_rounded,
-                      iconColor: Color(0xFF2A7F62),
-                      label: 'Next Booking',
-                      value: 'Gym - 6:00 PM',
-                      tag: 'Today',
+                      iconColor: const Color(0xFF2A7F62),
+                      label: t.nextBooking,
+                      value: t.gymBookingExample,
+                      tag: t.today,
                     ),
                     if (_latestRequest != null)
                       GlanceItemModel(
                         icon: Icons.assignment_turned_in_rounded,
                         iconColor: const Color(0xFFB8974A),
-                        label: 'Pending Request',
+                        label: t.pendingRequest,
                         value:
-                            '${_latestRequest!.category} - Unit ${_latestRequest!.unitNumber}',
+                            '${_latestRequest!.category} - ${t.unit} ${_latestRequest!.unitNumber}',
                         tag: _latestRequest!.status == 'in_progress'
-                            ? 'In Progress'
-                            : 'In Review',
+                            ? t.inProgress
+                            : t.inReview,
                       )
                     else if (!_loadingRequest)
-                      const GlanceItemModel(
+                      GlanceItemModel(
                         icon: Icons.assignment_turned_in_rounded,
-                        iconColor: Color(0xFFB8974A),
-                        label: 'Maintenance',
-                        value: 'No active requests',
-                        tag: 'All clear',
+                        iconColor: const Color(0xFFB8974A),
+                        label: t.maintenance,
+                        value: t.noActiveRequests,
+                        tag: t.allClear,
                       ),
-                    const GlanceItemModel(
+                    GlanceItemModel(
                       icon: Icons.person_pin_circle_rounded,
-                      iconColor: Color(0xFF5B7FA6),
-                      label: 'Next Visitor',
-                      value: 'Kami benamouna. - 3:00 PM',
-                      tag: 'Approved',
+                      iconColor: const Color(0xFF5B7FA6),
+                      label: t.nextVisitor,
+                      value: t.visitorExample,
+                      tag: t.approved,
                     ),
                   ],
                 ),
@@ -443,6 +461,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
   Future<void> _loadUser() async {
     try {
       final profile = await AuthService.whoami();
+
       if (!mounted) return;
 
       setState(() {
@@ -451,6 +470,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
       });
     } catch (_) {
       if (!mounted) return;
+
       setState(() {
         _displayName = 'Resident';
         _loadingUser = false;
@@ -461,8 +481,10 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
   @override
   void initState() {
     super.initState();
+
     _loadWeather();
     _loadUser();
+
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -476,6 +498,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
 
   Future<void> _loadWeather() async {
     final data = await WeatherService.fetchCurrent();
+
     if (mounted) {
       setState(() {
         _weather = data;
@@ -484,15 +507,19 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
     }
   }
 
-  String get _greeting {
+  String _greeting(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+
+    if (hour < 12) return t.goodMorning;
+    if (hour < 17) return t.goodAfternoon;
+
+    return t.goodEvening;
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final topPad = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -526,9 +553,9 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'HEXA RESIDENT',
-                      style: TextStyle(
+                    Text(
+                      t.hexaResident,
+                      style: const TextStyle(
                         color: Color(0xFF6B9E80),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -536,7 +563,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                       ),
                     ),
                     Text(
-                      '$_greeting, ${_displayName}',
+                      '${_greeting(context)}, $_displayName',
                       style: const TextStyle(
                         color: Color(0xFF6B9E80),
                         fontSize: 13,
@@ -597,9 +624,9 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                         size: 14,
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'SECURE HABITAT',
-                        style: TextStyle(
+                      Text(
+                        t.secureHabitat,
+                        style: const TextStyle(
                           color: Color(0xFF6B9E80),
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -609,9 +636,9 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Your home is secure\n& climate-controlled.',
-                    style: TextStyle(
+                  Text(
+                    t.homeSecureClimate,
+                    style: const TextStyle(
                       color: Color(0xFFE8D9B5),
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -626,12 +653,12 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                       _buildPill(
                         icon: Icons.thermostat_rounded,
                         label: _weather != null
-                            ? '${_weather!.temperature.toStringAsFixed(0)} C - Indoor'
-                            : '-- C - Indoor',
+                            ? '${_weather!.temperature.toStringAsFixed(0)} C - ${t.indoor}'
+                            : '-- C - ${t.indoor}',
                       ),
                       _buildPill(
                         icon: Icons.check_circle_outline_rounded,
-                        label: 'No alerts',
+                        label: t.noAlerts,
                       ),
                     ],
                   ),
@@ -676,7 +703,7 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                           ),
                         ),
                         Text(
-                          _weather?.description ?? 'Loading...',
+                          _weather?.description ?? t.loading,
                           style: const TextStyle(
                             color: Color(0xFF6B9E80),
                             fontSize: 12,
@@ -685,9 +712,9 @@ class _GreetingHeaderState extends State<_GreetingHeader> {
                       ],
                     ),
                     const Spacer(),
-                    const Text(
-                      'FORECAST',
-                      style: TextStyle(
+                    Text(
+                      t.forecast,
+                      style: const TextStyle(
                         color: Color(0xFF6B9E80),
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -855,9 +882,11 @@ class _AnnouncementComposerSheetState
   @override
   void initState() {
     super.initState();
+
     _contentController = TextEditingController(
       text: widget.announcement?.content ?? '',
     )..addListener(_handleInputChanged);
+
     _hasInput = _canSubmit;
   }
 
@@ -871,6 +900,7 @@ class _AnnouncementComposerSheetState
 
   void _handleInputChanged() {
     final nextHasInput = _canSubmit;
+
     if (nextHasInput != _hasInput || _errorText != null) {
       setState(() {
         _hasInput = nextHasInput;
@@ -901,9 +931,11 @@ class _AnnouncementComposerSheetState
       }
 
       if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) return;
+
       setState(() {
         _errorText = error.toString().replaceFirst('Exception: ', '');
       });
@@ -916,6 +948,7 @@ class _AnnouncementComposerSheetState
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -941,7 +974,7 @@ class _AnnouncementComposerSheetState
             ),
             const SizedBox(height: 20),
             Text(
-              widget.isEditing ? 'Edit Announcement' : 'New Announcement',
+              widget.isEditing ? t.editAnnouncement : t.newAnnouncement,
               style: const TextStyle(
                 color: Color(0xFF1A1A1A),
                 fontSize: 20,
@@ -951,8 +984,8 @@ class _AnnouncementComposerSheetState
             const SizedBox(height: 4),
             Text(
               widget.isEditing
-                  ? 'Update your message for all residents'
-                  : 'Share something with all residents',
+                  ? t.updateMessageResidents
+                  : t.shareWithResidents,
               style: const TextStyle(color: Color(0xFF9A9A9A), fontSize: 13),
             ),
             const SizedBox(height: 18),
@@ -968,29 +1001,32 @@ class _AnnouncementComposerSheetState
                   fontSize: 14,
                   height: 1.5,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   counterText: '',
-                  hintText: 'Write your announcement here...',
-                  hintStyle: TextStyle(color: Color(0xFF9A9A9A)),
+                  hintText: t.writeAnnouncementHint,
+                  hintStyle: const TextStyle(color: Color(0xFF9A9A9A)),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(16),
+                  contentPadding: const EdgeInsets.all(16),
                 ),
               ),
             ),
             if (widget.announcement?.isPinned == true) ...[
               const SizedBox(height: 10),
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.push_pin_rounded,
                     size: 14,
                     color: Color(0xFFB8974A),
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'This announcement is pinned. Pin status is preserved here.',
-                      style: TextStyle(color: Color(0xFF8C6B20), fontSize: 12),
+                      t.pinnedAnnouncementInfo,
+                      style: const TextStyle(
+                        color: Color(0xFF8C6B20),
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -1026,7 +1062,7 @@ class _AnnouncementComposerSheetState
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Cancel'),
+                      child: Text(t.cancel),
                     ),
                   ),
                 ),
@@ -1057,8 +1093,8 @@ class _AnnouncementComposerSheetState
                               )
                             : Text(
                                 widget.isEditing
-                                    ? 'Save Changes'
-                                    : 'Post Announcement',
+                                    ? t.saveChanges
+                                    : t.postAnnouncement,
                                 style: TextStyle(
                                   color: _hasInput
                                       ? const Color(0xFFE8D9B5)

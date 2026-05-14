@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:resident_app/features/requests/models/parking_spot.dart';
 import 'package:resident_app/features/requests/services/requests_service.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class ParkingScreen extends StatefulWidget {
   const ParkingScreen({super.key});
@@ -14,7 +16,6 @@ class _ParkingScreenState extends State<ParkingScreen> {
   bool _isLoading = true;
   String? _error;
 
-  // ── Radja: replace this with the real residentId from auth token ──
   static const String _myResidentId = 'mock-resident-01';
 
   @override
@@ -32,13 +33,12 @@ class _ParkingScreenState extends State<ParkingScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load parking data';
+        _error = AppLocalizations.of(context)!.failedLoadParkingData;
         _isLoading = false;
       });
     }
   }
 
-  // ── Split spots into resident and visitor ─────────────────────
   List<ParkingSpot> get _residentSpots =>
       _spots.where((s) => !s.isVisitorSpot).toList();
 
@@ -50,12 +50,14 @@ class _ParkingScreenState extends State<ParkingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D4A3E),
         foregroundColor: Colors.white,
-        title: const Text('Parking Lot'),
+        title: Text(t.parkingLot),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -69,54 +71,49 @@ class _ParkingScreenState extends State<ParkingScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: Colors.red)))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-
-                      // ── Resident parking section ───────────────
-                      _SectionHeader(
-                        title: 'Resident Parking',
-                        icon: Icons.home_rounded,
-                        color: const Color(0xFF2D4A3E),
-                      ),
-                      const SizedBox(height: 8),
-                      _Legend(showMySpot: true),
-                      const SizedBox(height: 12),
-                      _ParkingGrid(
-                        spots: _residentSpots,
-                        myResidentId: _myResidentId,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // ── Visitor parking section ────────────────
-                      _SectionHeader(
-                        title: 'Visitor Parking',
-                        icon: Icons.directions_car_rounded,
-                        color: const Color(0xFF2D4A3E),
-                        badge: '$_availableVisitorCount available',
-                      ),
-                      const SizedBox(height: 8),
-                      _Legend(showMySpot: false),
-                      const SizedBox(height: 12),
-                      _ParkingGrid(
-                        spots: _visitorSpots,
-                        myResidentId: _myResidentId,
-                      ),
-
-                    ],
+          ? Center(
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(
+                    title: t.residentParking,
+                    icon: Icons.home_rounded,
+                    color: const Color(0xFF2D4A3E),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  _Legend(showMySpot: true),
+                  const SizedBox(height: 12),
+                  _ParkingGrid(
+                    spots: _residentSpots,
+                    myResidentId: _myResidentId,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  _SectionHeader(
+                    title: t.visitorParking,
+                    icon: Icons.directions_car_rounded,
+                    color: const Color(0xFF2D4A3E),
+                    badge: '$_availableVisitorCount ${t.available}',
+                  ),
+                  const SizedBox(height: 8),
+                  _Legend(showMySpot: false),
+                  const SizedBox(height: 12),
+                  _ParkingGrid(
+                    spots: _visitorSpots,
+                    myResidentId: _myResidentId,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
 
-// ── Section header ────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -142,11 +139,14 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white, size: 18),
           const SizedBox(width: 8),
-          Text(title,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
           const Spacer(),
           if (badge != null)
             Container(
@@ -155,11 +155,14 @@ class _SectionHeader extends StatelessWidget {
                 color: Colors.green,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(badge!,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
+              child: Text(
+                badge!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
         ],
       ),
@@ -167,7 +170,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Legend ────────────────────────────────────────────────────────────────────
 class _Legend extends StatelessWidget {
   final bool showMySpot;
 
@@ -175,16 +177,18 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (showMySpot) ...[
-          _LegendDot(color: Colors.blue,  label: 'Your Spot'),
+          _LegendDot(color: Colors.blue, label: t.yourSpot),
           const SizedBox(width: 12),
         ],
-        _LegendDot(color: Colors.green, label: 'Available'),
+        _LegendDot(color: Colors.green, label: t.available),
         const SizedBox(width: 12),
-        _LegendDot(color: Colors.red,   label: 'Occupied'),
+        _LegendDot(color: Colors.red, label: t.occupied),
       ],
     );
   }
@@ -201,9 +205,10 @@ class _LegendDot extends StatelessWidget {
     return Row(
       children: [
         Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
@@ -211,27 +216,26 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
-// ── Parking grid ──────────────────────────────────────────────────────────────
 class _ParkingGrid extends StatelessWidget {
   final List<ParkingSpot> spots;
   final String myResidentId;
 
-  const _ParkingGrid({
-    required this.spots,
-    required this.myResidentId,
-  });
+  const _ParkingGrid({required this.spots, required this.myResidentId});
 
   Color _colorForSpot(ParkingSpot spot, bool isMySpot) {
     if (isMySpot) return Colors.blue;
     switch (spot.status) {
-      case SpotStatus.available: return Colors.green;
-      case SpotStatus.occupied:  return Colors.red;
+      case SpotStatus.available:
+        return Colors.green;
+      case SpotStatus.occupied:
+        return Colors.red;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // group spots by row prefix (A, B, V...)
+    final t = AppLocalizations.of(context)!;
+
     final Map<String, List<ParkingSpot>> rows = {};
     for (final spot in spots) {
       final row = spot.spotId.split('-').first;
@@ -244,11 +248,14 @@ class _ParkingGrid extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Row ${entry.key}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.grey)),
+            Text(
+              '${t.row} ${entry.key}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Colors.grey,
+              ),
+            ),
             const SizedBox(height: 8),
             GridView.builder(
               shrinkWrap: true,
@@ -275,19 +282,19 @@ class _ParkingGrid extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        isMySpot
-                            ? Icons.star_rounded
-                            : Icons.directions_car,
+                        isMySpot ? Icons.star_rounded : Icons.directions_car,
                         color: color,
                         size: 18,
                       ),
                       const SizedBox(height: 2),
-                      Text(spot.spotId,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          )),
+                      Text(
+                        spot.spotId,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
                     ],
                   ),
                 );

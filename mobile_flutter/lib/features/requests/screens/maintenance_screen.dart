@@ -3,6 +3,7 @@ import '../models/maintenance_request.dart';
 import '../services/requests_service.dart';
 import '../widgets/requests_design.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class MaintenanceScreen extends StatefulWidget {
   const MaintenanceScreen({super.key});
@@ -41,6 +42,34 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     super.dispose();
   }
 
+  String _categoryLabel(AppLocalizations t, String category) {
+    switch (category) {
+      case 'Plumbing':
+        return t.plumbing;
+      case 'Electrical':
+        return t.electrical;
+      case 'Cleaning':
+        return t.cleaning;
+      case 'Other':
+        return t.other;
+      default:
+        return category;
+    }
+  }
+
+  String _priorityLabel(AppLocalizations t, String key) {
+    switch (key) {
+      case 'low':
+        return t.low;
+      case 'medium':
+        return t.medium;
+      case 'high':
+        return t.high;
+      default:
+        return key;
+    }
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -61,16 +90,21 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   }
 
   Future<void> _submit() async {
+    final t = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
+
     try {
-      // Get token first
       final session = await AuthService.getStoredSession(
         requiredRole: 'resident',
       );
+
       if (session == null) {
-        if (mounted)
-          showErrorSnack(context, 'Session expired. Please log in again.');
+        if (mounted) {
+          showErrorSnack(context, t.sessionExpiredLoginAgain);
+        }
         return;
       }
 
@@ -78,16 +112,17 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         token: session.accessToken,
         request: MaintenanceRequest(
           unitNumber: _unitController.text.trim(),
-          maintenanceType: _category.toLowerCase(), // e.g. "plumbing"
-          title: _category, // e.g. "Plumbing" — used as display title
+          maintenanceType: _category.toLowerCase(),
+          title: _category,
           category: _category.toLowerCase(),
           description: _descController.text.trim(),
           priority: _priority,
           preferredDate: _preferredDate,
         ),
       );
+
       if (mounted) {
-        showSuccessSnack(context, 'Maintenance request submitted!');
+        showSuccessSnack(context, t.maintenanceRequestSubmitted);
         Navigator.pop(context);
       }
     } catch (e) {
@@ -99,13 +134,15 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
           RequestsAppBar(
-            title: 'Maintenance Request',
-            subtitle: 'Report an issue in your unit',
+            title: t.maintenanceRequest,
+            subtitle: t.reportIssueUnit,
             icon: Icons.build_outlined,
           ),
           Expanded(
@@ -117,15 +154,15 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                   children: [
                     FormCard(
                       children: [
-                        const FieldLabel('Unit Number'),
+                        FieldLabel(t.unitNumber),
                         RequestTextField(
                           controller: _unitController,
                           hint: 'e.g. A-204',
                           validator: (v) =>
-                              v == null || v.isEmpty ? 'Required' : null,
+                              v == null || v.isEmpty ? t.requiredField : null,
                         ),
                         const SizedBox(height: 16),
-                        const FieldLabel('Category'),
+                        FieldLabel(t.category),
                         RequestDropdown(
                           value: _category,
                           items: _categories,
@@ -137,16 +174,16 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Priority'),
+                        FieldLabel(t.priority),
                         const SizedBox(height: 8),
                         Row(
                           children: _priorities.map((p) {
                             final isSelected = _priority == p['key'];
+                            final key = p['key'] as String;
+
                             return Expanded(
                               child: GestureDetector(
-                                onTap: () => setState(
-                                  () => _priority = p['key'] as String,
-                                ),
+                                onTap: () => setState(() => _priority = key),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   margin: const EdgeInsets.only(right: 8),
@@ -178,7 +215,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                                       ),
                                       const SizedBox(height: 5),
                                       Text(
-                                        p['label'] as String,
+                                        _priorityLabel(t, key),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -202,20 +239,20 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Description'),
+                        FieldLabel(t.description),
                         RequestTextField(
                           controller: _descController,
-                          hint: 'Describe the issue in detail...',
+                          hint: t.describeIssueDetail,
                           maxLines: 4,
                           validator: (v) => v == null || v.length < 10
-                              ? 'Please provide more detail'
+                              ? t.provideMoreDetail
                               : null,
                         ),
                         const SizedBox(height: 16),
-                        const FieldLabel('Preferred Date (optional)'),
+                        FieldLabel(t.preferredDateOptional),
                         DatePickerRow(
                           selectedDate: _preferredDate,
-                          hint: 'Select a preferred date',
+                          hint: t.selectPreferredDate,
                           onTap: _pickDate,
                         ),
                       ],
@@ -223,7 +260,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                     const SizedBox(height: 28),
 
                     SubmitButton(
-                      label: 'Submit Request',
+                      label: t.submitRequest,
                       isLoading: _isLoading,
                       onPressed: _submit,
                     ),

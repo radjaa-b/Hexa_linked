@@ -3,6 +3,7 @@ import '../models/visitor_request.dart';
 import '../services/requests_service.dart';
 import '../widgets/requests_design.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class VisitorScreen extends StatefulWidget {
   const VisitorScreen({super.key});
@@ -21,7 +22,6 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
   String _purpose = 'Personal Visit';
   DateTime? _visitDate;
-
   TimeOfDay? _startTime;
 
   bool _isLoading = false;
@@ -42,6 +42,25 @@ class _VisitorScreenState extends State<VisitorScreen> {
     _emailController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  String _purposeLabel(AppLocalizations t, String purpose) {
+    switch (purpose) {
+      case 'Personal Visit':
+        return t.personalVisit;
+      case 'Delivery':
+        return t.delivery;
+      case 'Contractor / Repair':
+        return t.contractorRepair;
+      case 'Caregiver':
+        return t.caregiver;
+      case 'Moving In/Out':
+        return t.movingInOut;
+      case 'Other':
+        return t.other;
+      default:
+        return purpose;
+    }
   }
 
   Future<void> _pickDate() async {
@@ -99,15 +118,17 @@ class _VisitorScreenState extends State<VisitorScreen> {
   }
 
   Future<void> _submit() async {
+    final t = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_visitDate == null) {
-      showErrorSnack(context, 'Please select a visit date');
+      showErrorSnack(context, t.selectVisitDate);
       return;
     }
 
     if (_startTime == null) {
-      showErrorSnack(context, 'Please select the expected time of arrival');
+      showErrorSnack(context, t.selectExpectedArrivalTime);
       return;
     }
 
@@ -119,7 +140,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
       );
 
       if (session == null) {
-        throw Exception('User not authenticated');
+        throw Exception(t.userNotAuthenticated);
       }
 
       await RequestsService().submitVisitorRequest(
@@ -139,7 +160,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
       );
 
       if (mounted) {
-        showSuccessSnack(context, 'Visitor request sent!');
+        showSuccessSnack(context, t.visitorRequestSent);
         Navigator.pop(context);
       }
     } catch (e) {
@@ -191,13 +212,15 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
           RequestsAppBar(
-            title: 'Visitor Pass',
-            subtitle: 'Register an expected visitor',
+            title: t.visitorPass,
+            subtitle: t.registerExpectedVisitor,
             icon: Icons.badge_outlined,
           ),
           Expanded(
@@ -209,38 +232,38 @@ class _VisitorScreenState extends State<VisitorScreen> {
                   children: [
                     FormCard(
                       children: [
-                        const FieldLabel('Visitor Full Name'),
+                        FieldLabel(t.visitorFullName),
                         RequestTextField(
                           controller: _nameController,
                           hint: 'Ahmed Benali',
                           validator: (v) => v == null || v.trim().isEmpty
-                              ? 'Name is required'
+                              ? t.nameRequired
                               : null,
                         ),
                         const SizedBox(height: 16),
 
-                        const FieldLabel('Visitor Phone'),
+                        FieldLabel(t.visitorPhone),
                         RequestTextField(
                           controller: _phoneController,
                           hint: '+213 555 123 456',
                           keyboardType: TextInputType.phone,
                           validator: (v) => v == null || v.trim().isEmpty
-                              ? 'Phone is required'
+                              ? t.phoneRequired
                               : null,
                         ),
                         const SizedBox(height: 16),
 
-                        const FieldLabel('Visitor Email'),
+                        FieldLabel(t.visitorEmail),
                         RequestTextField(
                           controller: _emailController,
                           hint: 'visitor@email.com',
                           keyboardType: TextInputType.emailAddress,
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Email is required';
+                              return t.emailRequired;
                             }
                             if (!v.contains('@')) {
-                              return 'Enter a valid email';
+                              return t.validEmailRequired;
                             }
                             return null;
                           },
@@ -252,11 +275,22 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Purpose'),
+                        FieldLabel(t.purpose),
                         RequestDropdown(
-                          value: _purpose,
-                          items: _purposes,
-                          onChanged: (v) => setState(() => _purpose = v!),
+                          value: _purposeLabel(t, _purpose),
+                          items: _purposes
+                              .map((p) => _purposeLabel(t, p))
+                              .toList(),
+                          onChanged: (v) {
+                            if (v == null) return;
+
+                            final original = _purposes.firstWhere(
+                              (p) => _purposeLabel(t, p) == v,
+                              orElse: () => 'Personal Visit',
+                            );
+
+                            setState(() => _purpose = original);
+                          },
                         ),
                       ],
                     ),
@@ -265,10 +299,10 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Visit Date'),
+                        FieldLabel(t.visitDate),
                         DatePickerRow(
                           selectedDate: _visitDate,
-                          hint: 'Select date',
+                          hint: t.selectDate,
                           onTap: _pickDate,
                         ),
                         if (_visitDate != null) ...[
@@ -276,7 +310,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              'Selected: ${_formatDate(_visitDate)}',
+                              '${t.selected}: ${_formatDate(_visitDate)}',
                               style: const TextStyle(
                                 color: AppColors.mutedGreen,
                                 fontSize: 12,
@@ -288,9 +322,9 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
                         const SizedBox(height: 16),
 
-                        const FieldLabel('Expected Time of Arrival'),
+                        FieldLabel(t.expectedTimeOfArrival),
                         _timePickerBox(
-                          hint: 'Select expected arrival time',
+                          hint: t.selectExpectedArrivalTime,
                           time: _startTime,
                           onTap: _pickTime,
                         ),
@@ -301,10 +335,10 @@ class _VisitorScreenState extends State<VisitorScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Note (optional)'),
+                        FieldLabel(t.noteOptional),
                         RequestTextField(
                           controller: _noteController,
-                          hint: 'Optional note',
+                          hint: t.optionalNote,
                           validator: (_) => null,
                         ),
                       ],
@@ -313,7 +347,7 @@ class _VisitorScreenState extends State<VisitorScreen> {
                     const SizedBox(height: 28),
 
                     SubmitButton(
-                      label: 'Register Visitor',
+                      label: t.registerVisitor,
                       isLoading: _isLoading,
                       onPressed: _submit,
                     ),

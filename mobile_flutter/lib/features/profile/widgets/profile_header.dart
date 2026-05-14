@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:resident_app/features/profile/models/resident_profile.dart';
 
+import 'package:resident_app/l10n/app_localizations.dart';
+
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key, required this.profile});
 
@@ -10,7 +12,8 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = profile.name.trim().isEmpty ? 'Resident' : profile.name;
     final displayInitials = profile.initials;
-    final displayRole = _formatRole(profile.role);
+    final t = AppLocalizations.of(context)!;
+    final displayRole = _formatRole(profile.role, t.resident);
 
     return SizedBox(
       width: double.infinity,
@@ -135,9 +138,10 @@ class ProfileHeader extends StatelessWidget {
     );
   }
 
-  String _formatRole(String? role) {
+  String _formatRole(String? role, String residentText) {
     final raw = (role ?? 'resident').trim();
-    if (raw.isEmpty) return 'Resident';
+
+    if (raw.isEmpty) return residentText;
 
     return raw
         .replaceAll('_', ' ')

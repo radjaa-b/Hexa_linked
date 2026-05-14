@@ -4,6 +4,7 @@ import '../models/booking_request.dart';
 import '../services/requests_service.dart';
 import '../widgets/requests_design.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -61,6 +62,25 @@ class _BookingScreenState extends State<BookingScreen> {
     super.dispose();
   }
 
+  String _areaLabel(AppLocalizations t, String area) {
+    switch (area) {
+      case 'Gym':
+        return t.gym;
+      case 'Pool':
+        return t.pool;
+      case 'Rooftop':
+        return t.rooftop;
+      case 'BBQ Area':
+        return t.bbqArea;
+      case 'Meeting Room':
+        return t.meetingRoom;
+      case 'Kids Room':
+        return t.kidsRoom;
+      default:
+        return area;
+    }
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -84,10 +104,12 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _submit() async {
+    final t = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_bookingDate == null) {
-      showErrorSnack(context, 'Please select a booking date');
+      showErrorSnack(context, t.selectBookingDate);
       return;
     }
 
@@ -100,7 +122,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
       if (session == null) {
         if (mounted) {
-          showErrorSnack(context, 'Session expired. Please login again.');
+          showErrorSnack(context, t.sessionExpiredLoginAgain);
         }
         return;
       }
@@ -121,7 +143,7 @@ class _BookingScreenState extends State<BookingScreen> {
       );
 
       if (mounted) {
-        showSuccessSnack(context, 'Booking confirmed!');
+        showSuccessSnack(context, t.bookingConfirmed);
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -137,13 +159,15 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       body: Column(
         children: [
           RequestsAppBar(
-            title: 'Book Shared Area',
-            subtitle: 'Reserve a facility in your building',
+            title: t.bookSharedArea,
+            subtitle: t.reserveFacilityBuilding,
             icon: Icons.meeting_room_outlined,
           ),
           Expanded(
@@ -155,12 +179,12 @@ class _BookingScreenState extends State<BookingScreen> {
                   children: [
                     FormCard(
                       children: [
-                        const FieldLabel('Your Unit Number'),
+                        FieldLabel(t.yourUnitNumber),
                         RequestTextField(
                           controller: _unitController,
                           hint: 'e.g. A-204',
                           validator: (v) =>
-                              v == null || v.isEmpty ? 'Required' : null,
+                              v == null || v.isEmpty ? t.requiredField : null,
                         ),
                       ],
                     ),
@@ -168,7 +192,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Select Area'),
+                        FieldLabel(t.selectArea),
                         const SizedBox(height: 10),
                         GridView.count(
                           crossAxisCount: 3,
@@ -211,7 +235,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      area['name'],
+                                      _areaLabel(t, area['name']),
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -235,20 +259,20 @@ class _BookingScreenState extends State<BookingScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Booking Date'),
+                        FieldLabel(t.bookingDate),
                         DatePickerRow(
                           selectedDate: _bookingDate,
-                          hint: 'Select date',
+                          hint: t.selectDate,
                           onTap: _pickDate,
                         ),
                         const SizedBox(height: 16),
-                        const FieldLabel('Time Slot'),
+                        FieldLabel(t.timeSlot),
                         const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
                               child: _TimeSelectColumn(
-                                label: 'From',
+                                label: t.from,
                                 value: _startTime,
                                 slots: _timeSlots,
                                 onChanged: (v) {
@@ -272,7 +296,7 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                             Expanded(
                               child: _TimeSelectColumn(
-                                label: 'To',
+                                label: t.to,
                                 value: _endTime,
                                 slots: _timeSlots,
                                 onChanged: (v) {
@@ -290,7 +314,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                     FormCard(
                       children: [
-                        const FieldLabel('Number of Guests'),
+                        FieldLabel(t.numberOfGuests),
                         RequestTextField(
                           controller: _guestCountController,
                           hint: '1',
@@ -298,16 +322,16 @@ class _BookingScreenState extends State<BookingScreen> {
                           validator: (v) {
                             final n = int.tryParse(v ?? '');
                             if (n == null || n < 1) {
-                              return 'Enter a valid number';
+                              return t.validNumberRequired;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 16),
-                        const FieldLabel('Notes (optional)'),
+                        FieldLabel(t.notesOptional),
                         RequestTextField(
                           controller: _notesController,
-                          hint: 'Any special requirements...',
+                          hint: t.specialRequirementsHint,
                           maxLines: 3,
                         ),
                       ],
@@ -315,7 +339,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(height: 28),
 
                     SubmitButton(
-                      label: 'Confirm Booking',
+                      label: t.confirmBooking,
                       isLoading: _isLoading,
                       onPressed: _submit,
                     ),

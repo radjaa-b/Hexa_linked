@@ -210,12 +210,14 @@ class RequestDropdown extends StatelessWidget {
   final String value;
   final List<String> items;
   final void Function(String?) onChanged;
+  final String Function(String)? itemLabelBuilder;
 
   const RequestDropdown({
     super.key,
     required this.value,
     required this.items,
     required this.onChanged,
+    this.itemLabelBuilder,
   });
 
   @override
@@ -241,7 +243,14 @@ class RequestDropdown extends StatelessWidget {
             color: AppColors.darkGreen.withOpacity(0.50),
           ),
           items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e,
+                  child: Text(
+                    itemLabelBuilder == null ? e : itemLabelBuilder!(e),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: onChanged,
         ),

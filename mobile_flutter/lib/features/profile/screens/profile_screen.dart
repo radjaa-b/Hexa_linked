@@ -5,6 +5,8 @@ import 'package:resident_app/features/profile/widgets/profile_header.dart';
 import 'package:resident_app/features/profile/widgets/profile_info_tile.dart';
 import 'package:resident_app/features/profile/widgets/logout_button.dart';
 import 'package:resident_app/features/auth/screens/welcome_screen.dart';
+import 'package:resident_app/l10n/app_localizations.dart';
+import 'package:resident_app/main.dart';
 
 // ── Design tokens ─────────────────────────────────────────────
 class _C {
@@ -42,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadProfile() async {
     try {
       final profile = await AuthService.whoami();
+
       if (!mounted) return;
 
       setState(() {
@@ -60,11 +63,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
+
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+
     _animCtrl.forward();
     _loadProfile();
   }
@@ -77,6 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _handleLogout() async {
     await AuthService.clearToken();
+
     if (!mounted) return;
 
     Navigator.pushAndRemoveUntil(
@@ -88,6 +95,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     if (_loadingProfile) {
       return const Scaffold(
         backgroundColor: _C.bg,
@@ -109,26 +118,32 @@ class _ProfileScreenState extends State<ProfileScreen>
                   color: _C.gold,
                   size: 34,
                 ),
+
                 const SizedBox(height: 12),
-                const Text(
-                  'Unable to load profile.',
-                  style: TextStyle(
+
+                Text(
+                  t.unableToLoadProfile,
+                  style: const TextStyle(
                     color: _C.textPrim,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+
                 const SizedBox(height: 8),
-                const Text(
-                  'Please try again or sign in again.',
+
+                Text(
+                  t.tryAgainOrSignIn,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: _C.textSec,
                     fontSize: 13,
                     height: 1.5,
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 ElevatedButton(
                   onPressed: _loadProfile,
                   style: ElevatedButton.styleFrom(
@@ -138,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Retry'),
+                  child: Text(t.retry),
                 ),
               ],
             ),
@@ -160,58 +175,70 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               ProfileHeader(profile: profile),
 
-              _label('Personal Information'),
+              _label(t.personalInformation),
+
               _darkCard(
                 child: Column(
                   children: [
                     ProfileInfoTile(
                       icon: Icons.person_outline_rounded,
-                      label: 'FULL NAME',
+                      label: t.fullName,
                       value: profile.name,
                     ),
+
                     _divider(),
+
                     ProfileInfoTile(
                       icon: Icons.home_outlined,
-                      label: 'UNIT',
-                      value: profile.unit ?? 'Not assigned',
+                      label: t.unit,
+                      value: profile.unit ?? t.notAssigned,
                     ),
+
                     _divider(),
+
                     ProfileInfoTile(
                       icon: Icons.email_outlined,
-                      label: 'EMAIL',
+                      label: t.email,
                       value: profile.email,
                     ),
+
                     _divider(),
+
                     ProfileInfoTile(
                       icon: Icons.phone_outlined,
-                      label: 'PHONE',
-                      value: profile.phone ?? 'Not provided',
+                      label: t.phone,
+                      value: profile.phone ?? t.notProvided,
                       isLast: true,
                     ),
                   ],
                 ),
               ),
 
-              _label('Settings'),
+              _label(t.settings),
+
               _darkCard(
                 child: Column(
                   children: [
                     _settingRow(
                       icon: Icons.notifications_outlined,
-                      label: 'Push notifications',
+                      label: t.pushNotifications,
                       trailing: Switch(
                         value: _notificationsOn,
-                        onChanged: (v) => setState(() => _notificationsOn = v),
+                        onChanged: (v) {
+                          setState(() => _notificationsOn = v);
+                        },
                         activeColor: _C.gold,
                         activeTrackColor: _C.gold.withOpacity(0.25),
                         inactiveThumbColor: _C.textSec,
                         inactiveTrackColor: _C.divider,
                       ),
                     ),
+
                     _divider(),
+
                     _settingRow(
                       icon: Icons.language_rounded,
-                      label: 'Language',
+                      label: t.language,
                       trailing: GestureDetector(
                         onTap: _showLanguagePicker,
                         child: Row(
@@ -224,7 +251,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 fontSize: 14,
                               ),
                             ),
+
                             const SizedBox(width: 4),
+
                             const Icon(
                               Icons.chevron_right_rounded,
                               color: _C.textSec,
@@ -238,35 +267,46 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
 
-              _label('Legal'),
+              _label(t.legal),
+
               _expandableCard(
                 icon: Icons.gavel_rounded,
-                title: 'Residence Rules',
+                title: t.residenceRules,
                 expanded: _rulesExpanded,
-                onTap: () => setState(() => _rulesExpanded = !_rulesExpanded),
+                onTap: () {
+                  setState(() => _rulesExpanded = !_rulesExpanded);
+                },
                 content: _rulesText,
               ),
+
               const SizedBox(height: 10),
+
               _expandableCard(
                 icon: Icons.privacy_tip_outlined,
-                title: 'Terms & Privacy',
+                title: t.termsPrivacy,
                 expanded: _termsExpanded,
-                onTap: () => setState(() => _termsExpanded = !_termsExpanded),
+                onTap: () {
+                  setState(() => _termsExpanded = !_termsExpanded);
+                },
                 content: _termsText,
               ),
 
               const SizedBox(height: 24),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: LogoutButton(onLogout: _handleLogout),
               ),
 
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.only(top: 20),
                   child: Text(
-                    'Residence App v1.0.0',
-                    style: TextStyle(color: Color(0xFF3A5244), fontSize: 12),
+                    t.appVersion,
+                    style: const TextStyle(
+                      color: Color(0xFF3A5244),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -277,68 +317,78 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-    child: Text(
-      text.toUpperCase(),
-      style: const TextStyle(
-        color: _C.textSec,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.4,
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          color: _C.textSec,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.4,
+        ),
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _darkCard({required Widget child}) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.divider, width: 1),
+  Widget _darkCard({required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        decoration: BoxDecoration(
+          color: _C.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _C.divider, width: 1),
+        ),
+        child: child,
       ),
-      child: child,
-    ),
-  );
+    );
+  }
 
-  Widget _divider() =>
-      const Divider(height: 1, thickness: 1, color: _C.divider);
+  Widget _divider() {
+    return const Divider(height: 1, thickness: 1, color: _C.divider);
+  }
 
   Widget _settingRow({
     required IconData icon,
     required String label,
     required Widget trailing,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    child: Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: _C.gold.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(10),
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: _C.gold.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: _C.gold, size: 17),
           ),
-          child: Icon(icon, color: _C.gold, size: 17),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: _C.textPrim,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _C.textPrim,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-        ),
-        trailing,
-      ],
-    ),
-  );
+
+          trailing,
+        ],
+      ),
+    );
+  }
 
   Widget _expandableCard({
     required IconData icon,
@@ -346,163 +396,192 @@ class _ProfileScreenState extends State<ProfileScreen>
     required bool expanded,
     required VoidCallback onTap,
     required String content,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    child: Container(
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.divider, width: 1),
-      ),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _C.gold.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: _C.gold, size: 17),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: _C.textPrim,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 250),
-                    child: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: _C.textSec,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Divider(height: 1, color: _C.divider),
-                  const SizedBox(height: 14),
-                  Text(
-                    content,
-                    style: const TextStyle(
-                      color: _C.textSec,
-                      fontSize: 13,
-                      height: 1.7,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            crossFadeState: expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 250),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  void _showLanguagePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        padding: const EdgeInsets.all(24),
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
         decoration: BoxDecoration(
           color: _C.card,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _C.divider),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _C.divider, width: 1),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Select Language',
-              style: TextStyle(
-                color: _C.textPrim,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...['English', 'Français', 'العربية'].map((lang) {
-              final selected = _language == lang;
-              return GestureDetector(
-                onTap: () {
-                  setState(() => _language = lang);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: selected ? _C.gold.withOpacity(0.12) : _C.cardLight,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: selected
-                          ? _C.gold.withOpacity(0.40)
-                          : Colors.transparent,
-                      width: 1,
+            GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: _C.gold.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: _C.gold, size: 17),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          lang,
-                          style: TextStyle(
-                            color: selected ? _C.gold : _C.textPrim,
-                            fontSize: 15,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: _C.textPrim,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (selected)
-                        const Icon(
-                          Icons.check_rounded,
-                          color: _C.gold,
-                          size: 18,
-                        ),
-                    ],
-                  ),
+                    ),
+
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: _C.textSec,
+                        size: 22,
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            }),
+              ),
+            ),
+
+            AnimatedCrossFade(
+              firstChild: const SizedBox(width: double.infinity),
+              secondChild: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(height: 1, color: _C.divider),
+
+                    const SizedBox(height: 14),
+
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        color: _C.textSec,
+                        fontSize: 13,
+                        height: 1.7,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              crossFadeState: expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 250),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showLanguagePicker() {
+    final t = AppLocalizations.of(context)!;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _C.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _C.divider),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.selectLanguage,
+                style: const TextStyle(
+                  color: _C.textPrim,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ...[t.english, t.french, t.arabic].map((lang) {
+                final selected = _language == lang;
+
+                return GestureDetector(
+                  onTap: () async {
+                    final code = lang == t.french
+                        ? 'fr'
+                        : lang == t.arabic
+                        ? 'ar'
+                        : 'en';
+
+                    await AppLocale.setLocale(code);
+
+                    if (!mounted) return;
+
+                    setState(() => _language = lang);
+
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? _C.gold.withOpacity(0.12)
+                          : _C.cardLight,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected
+                            ? _C.gold.withOpacity(0.40)
+                            : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            lang,
+                            style: TextStyle(
+                              color: selected ? _C.gold : _C.textPrim,
+                              fontSize: 15,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+
+                        if (selected)
+                          const Icon(
+                            Icons.check_rounded,
+                            color: _C.gold,
+                            size: 18,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 
