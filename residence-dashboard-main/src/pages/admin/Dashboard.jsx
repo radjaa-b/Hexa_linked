@@ -1,24 +1,34 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageWrapper from "../../components/layout/PageWrapper";
 import "./Dashboard.css";
 import useAuth from "../../hooks/useAuth";
+
 import {
   getMaintenanceRequests,
   getMaintenanceRequestById,
- 
   assignTechnicianToMaintenance,
 } from "../../services/maintenanceService";
+
 import { getAlerts } from "../../services/alertService";
+
 import {
   getAllVisitorRequests,
   getVisitorAccessLogs,
 } from "../../services/visitorRequestsService";
+
 import { getResidents } from "../../api/residents.api";
+
 import { getContactRequests } from "../../services/contactAdminService";
+
 import { getSecurityAccessLogs } from "../../services/accessLogService";
 
 import { ROUTES } from "../../constants/routes";
+
+import { useEffect, useState } from "react";
+
+
+
+
 
 const mockConsumption = {
   electricity: { value: 1240, unit: "kWh", trend: "+5%", up: true },
@@ -105,7 +115,6 @@ const staffShifts = [
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const loadTechnicians = async () => {
   try {
     const data = await getResidents({ search: "" });
@@ -338,7 +347,6 @@ const [technicians, setTechnicians] = useState([]);
       if (!silent) setLoadingLogs(false);
     }
   };
-
   useEffect(() => {
     loadDashboardStats();
     loadMaintenance();
@@ -384,7 +392,6 @@ const [technicians, setTechnicians] = useState([]);
     setSelectedRequest(null);
     setActionError("");
     setActionSuccess("");
-    setStatusValue("");
     setTechnicianId("");
   };
 
@@ -662,7 +669,6 @@ const [technicians, setTechnicians] = useState([]);
           </div>
         </div>
       </div>
-
       {(selectedRequest || loadingRequestDetails) && (
         <div className="dash-modal-overlay" onClick={closeMaintenanceDetails}>
           <div className="dash-modal" onClick={(e) => e.stopPropagation()}>
@@ -744,42 +750,43 @@ const [technicians, setTechnicians] = useState([]);
                   </p>
                 </div>
 
-               <div className="dash-modal-section">
-  <span className="dash-modal-label">Assign technician</span>
+                <div className="dash-modal-section">
+                  <span className="dash-modal-label">Assign technician</span>
 
-  <div className="dash-tech-picker">
-    {technicians.map((tech) => (
-      <button
-        key={tech.id}
-        type="button"
-        className={`dash-tech-option ${
-          String(technicianId) === String(tech.id) ? "selected" : ""
-        }`}
-        onClick={() => setTechnicianId(String(tech.id))}
-      >
-        <div className="dash-tech-avatar">🛠️</div>
+                  <div className="dash-tech-picker">
+                    {technicians.map((tech) => (
+                      <button
+                        key={tech.id}
+                        type="button"
+                        className={`dash-tech-option ${
+                          String(technicianId) === String(tech.id)
+                            ? "selected"
+                            : ""
+                        }`}
+                        onClick={() => setTechnicianId(String(tech.id))}
+                      >
+                        <div className="dash-tech-avatar">🛠️</div>
 
-        <div className="dash-tech-info">
-          <span className="dash-tech-name">{tech.name}</span>
-          <span className="dash-tech-email">{tech.email}</span>
-        </div>
+                        <div className="dash-tech-info">
+                          <span className="dash-tech-name">{tech.name}</span>
+                          <span className="dash-tech-email">{tech.email}</span>
+                        </div>
 
-        <span className="dash-tech-id">#{tech.id}</span>
-      </button>
-    ))}
-  </div>
+                        <span className="dash-tech-id">#{tech.id}</span>
+                      </button>
+                    ))}
+                  </div>
 
-  <button
-    type="button"
-    className="dash-modal-btn dash-tech-assign-btn"
-    onClick={handleAssignTechnician}
-    disabled={actionLoading}
-  >
-    Assign selected technician
-  </button>
-</div>
+                  <button
+                    type="button"
+                    className="dash-modal-btn dash-tech-assign-btn"
+                    onClick={handleAssignTechnician}
+                    disabled={actionLoading}
+                  >
+                    Assign selected technician
+                  </button>
+                </div>
 
-                
                 {actionError ? (
                   <div className="dash-modal-feedback dash-modal-error">
                     {actionError}
