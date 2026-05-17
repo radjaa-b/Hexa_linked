@@ -56,6 +56,15 @@ export const scanVisitorPass = async (code) => {
 
   return res.data;
 };
+
+export const scanResidentQR = async (code) => {
+  const res = await axiosInstance.post(
+    "/resident-access/scan",
+    { code }
+  );
+
+  return res.data;
+};
 // -----------------------------
 // Admin
 // -----------------------------

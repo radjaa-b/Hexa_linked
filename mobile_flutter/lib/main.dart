@@ -14,6 +14,7 @@ import 'package:resident_app/features/auth/screens/activate_account_screen.dart'
 import 'package:resident_app/features/auth/screens/login_screen.dart';
 import 'package:resident_app/features/auth/screens/welcome_screen.dart';
 import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/features/fire_alert/widgets/fire_alert_listener.dart';
 
 class AppLocale {
   static final ValueNotifier<Locale?> notifier = ValueNotifier<Locale?>(null);
@@ -111,6 +112,11 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Residents App',
+          builder: (context, child) {
+  return FireAlertListener(
+    child: child ?? const SizedBox.shrink(),
+  );
+},
 
           locale: locale,
           supportedLocales: AppLocalizations.supportedLocales,

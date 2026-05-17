@@ -3,6 +3,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import PageWrapper from "../../components/layout/PageWrapper";
 import {
   scanVisitorPass,
+ scanResidentQR,
   markVisitorArrived,
 } from "../../services/visitorRequestsService";
 
@@ -12,6 +13,7 @@ const QRScanner = () => {
 
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
+  const [qrType, setQrType] = useState(null);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
@@ -28,9 +30,19 @@ const QRScanner = () => {
     }
   };
 
+  const detectQrType = (decodedText) => {
+    const code = decodedText.trim();
+
+    if (code.startsWith("VST-")) return "visitor";
+    if (code.startsWith("RES-")) return "resident";
+
+    return "unknown";
+  };
+
   const startScanner = async () => {
     setError("");
     setResult(null);
+    setQrType(null);
 
     try {
       const html5QrCode = new Html5Qrcode("qr-reader");
@@ -46,11 +58,31 @@ const QRScanner = () => {
             setProcessing(true);
             setError("");
             setResult(null);
+            setQrType(null);
 
-            const data = await scanVisitorPass(decodedText);
-            setResult(data);
+            const code = decodedText.trim();
+            const type = detectQrType(code);
+
+            if (type === "unknown") {
+              setError("Unknown QR code type. Please scan a valid visitor or resident QR.");
+              return;
+            }
+
+            if (type === "visitor") {
+              const data = await scanVisitorPass(code);
+              setQrType("visitor");
+              setResult(data);
+              return;
+            }
+
+            if (type === "resident") {
+              const data = await scanResidentQR(code);
+              setQrType("resident");
+              setResult(data);
+            }
           } catch (err) {
             setResult(null);
+            setQrType(null);
 
             const detail = err?.response?.data?.detail;
 
@@ -75,12 +107,13 @@ const QRScanner = () => {
     } catch (err) {
       console.error(err);
       setResult(null);
+      setQrType(null);
       setError("Could not access camera. Allow camera permission and try again.");
     }
   };
 
   const handleAllowEntry = async () => {
-    if (!result?.request_id) return;
+    if (!result?.request_id || qrType !== "visitor") return;
 
     try {
       setProcessing(true);
@@ -93,6 +126,7 @@ const QRScanner = () => {
       }));
     } catch (err) {
       setResult(null);
+      setQrType(null);
       setError(err?.response?.data?.detail || "Failed to mark visitor as arrived.");
     } finally {
       setProcessing(false);
@@ -106,13 +140,165 @@ const QRScanner = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const renderResultCard = () => {
+    if (!result) return null;
+
+    if (qrType === "resident") {
+      return (
+        <>
+          <div
+            style={{
+              background: "#edfaf5",
+              color: "#0F6E56",
+              padding: "12px",
+              borderRadius: "14px",
+              fontWeight: "800",
+              marginBottom: "20px",
+            }}
+          >
+            ✅ {result.message}
+          </div>
+
+          <div
+            style={{
+              background: "#f8faf9",
+              border: "1px solid #d7e7df",
+              padding: "14px",
+              borderRadius: "16px",
+              marginBottom: "18px",
+              fontWeight: "800",
+              color: "#1c3b2e",
+            }}
+          >
+            🏠 Resident Access
+          </div>
+
+          <p>
+            <strong>Resident:</strong> {result.full_name || result.username}
+          </p>
+          <p>
+            <strong>Username:</strong> {result.username}
+          </p>
+          <p>
+            <strong>Email:</strong> {result.email}
+          </p>
+          <p>
+            <strong>Phone:</strong> {result.phone_number || "N/A"}
+          </p>
+          <p>
+            <strong>Unit:</strong> {result.unit_number || "N/A"}
+          </p>
+          <p>
+            <strong>Status:</strong> {result.status}
+          </p>
+
+          <div
+            style={{
+              marginTop: "22px",
+              background: "#edfaf5",
+              color: "#0F6E56",
+              padding: "14px",
+              borderRadius: "16px",
+              fontWeight: "800",
+              textAlign: "center",
+            }}
+          >
+            🚪 Resident access granted
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <div
+          style={{
+            background: "#edfaf5",
+            color: "#0F6E56",
+            padding: "12px",
+            borderRadius: "14px",
+            fontWeight: "800",
+            marginBottom: "20px",
+          }}
+        >
+          ✅ {result.message}
+        </div>
+
+        <div
+          style={{
+            background: "#f8faf9",
+            border: "1px solid #d7e7df",
+            padding: "14px",
+            borderRadius: "16px",
+            marginBottom: "18px",
+            fontWeight: "800",
+            color: "#1c3b2e",
+          }}
+        >
+          👤 Visitor Access
+        </div>
+
+        <p>
+          <strong>Visitor:</strong> {result.visitor_name}
+        </p>
+        <p>
+          <strong>Phone:</strong> {result.visitor_phone}
+        </p>
+        <p>
+          <strong>Email:</strong> {result.visitor_email}
+        </p>
+        <p>
+          <strong>Purpose:</strong> {result.purpose}
+        </p>
+        <p>
+          <strong>Date:</strong> {result.visit_date}
+        </p>
+        <p>
+          <strong>Time:</strong> {result.start_time} - {result.end_time}
+        </p>
+        <p>
+          <strong>Resident:</strong> {result.resident_username}
+        </p>
+        <p>
+          <strong>Unit:</strong> {result.unit_number}
+        </p>
+        <p>
+          <strong>Status:</strong> {result.status}
+        </p>
+
+        {result.status === "APPROVED" && (
+          <button
+            onClick={handleAllowEntry}
+            disabled={processing}
+            style={{
+              marginTop: "22px",
+              width: "100%",
+              background: "#1c3b2e",
+              color: "#e8d9b5",
+              padding: "14px",
+              border: "none",
+              borderRadius: "16px",
+              fontSize: "15px",
+              fontWeight: "800",
+              cursor: processing ? "not-allowed" : "pointer",
+              boxShadow: "0 8px 24px rgba(28,59,46,.25)",
+              opacity: processing ? 0.7 : 1,
+            }}
+          >
+            {processing ? "Updating..." : "🚪 Allow Entry"}
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
     <PageWrapper>
       <div style={{ padding: "24px" }}>
-        <h1 style={{ marginBottom: "8px" }}>Scan Visitor QR</h1>
+        <h1 style={{ marginBottom: "8px" }}>Scan Access QR</h1>
 
         <p style={{ marginBottom: "24px", color: "#444" }}>
-          Use the computer camera to scan the visitor pass.
+          Use the computer camera to scan a visitor pass or resident access QR.
         </p>
 
         <div
@@ -197,7 +383,7 @@ const QRScanner = () => {
               minHeight: "430px",
             }}
           >
-            {processing && <p>Checking visitor...</p>}
+            {processing && <p>Checking QR code...</p>}
 
             {error && (
               <div
@@ -227,73 +413,7 @@ const QRScanner = () => {
               </div>
             )}
 
-            {result && (
-              <>
-                <div
-                  style={{
-                    background: "#edfaf5",
-                    color: "#0F6E56",
-                    padding: "12px",
-                    borderRadius: "14px",
-                    fontWeight: "800",
-                    marginBottom: "20px",
-                  }}
-                >
-                  ✅ {result.message}
-                </div>
-
-                <p>
-                  <strong>Visitor:</strong> {result.visitor_name}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {result.visitor_phone}
-                </p>
-                <p>
-                  <strong>Email:</strong> {result.visitor_email}
-                </p>
-                <p>
-                  <strong>Purpose:</strong> {result.purpose}
-                </p>
-                <p>
-                  <strong>Date:</strong> {result.visit_date}
-                </p>
-                <p>
-                  <strong>Time:</strong> {result.start_time} - {result.end_time}
-                </p>
-                <p>
-                  <strong>Resident:</strong> {result.resident_username}
-                </p>
-                <p>
-                  <strong>Unit:</strong> {result.unit_number}
-                </p>
-                <p>
-                  <strong>Status:</strong> {result.status}
-                </p>
-
-                {result.status === "APPROVED" && (
-                  <button
-                    onClick={handleAllowEntry}
-                    disabled={processing}
-                    style={{
-                      marginTop: "22px",
-                      width: "100%",
-                      background: "#1c3b2e",
-                      color: "#e8d9b5",
-                      padding: "14px",
-                      border: "none",
-                      borderRadius: "16px",
-                      fontSize: "15px",
-                      fontWeight: "800",
-                      cursor: processing ? "not-allowed" : "pointer",
-                      boxShadow: "0 8px 24px rgba(28,59,46,.25)",
-                      opacity: processing ? 0.7 : 1,
-                    }}
-                  >
-                    {processing ? "Updating..." : "🚪 Allow Entry"}
-                  </button>
-                )}
-              </>
-            )}
+            {renderResultCard()}
           </div>
         </div>
       </div>

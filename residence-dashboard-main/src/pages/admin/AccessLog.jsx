@@ -69,6 +69,22 @@ const parseSecuritySource = (entry) => {
       method: "RFID / IoT",
     };
   }
+  if (source.startsWith("qr_")) {
+  const [rawType, name, unit] = source.split("|");
+  const type = rawType.replace("qr_", "");
+
+  return {
+    id: `security-${entry.id}`,
+    originalId: entry.id,
+    type,
+    name: name || "QR Resident",
+    unit: unit && unit !== "-" ? unit : "—",
+    gate: entry.gate_id || "—",
+    status: entry.access_status || "granted",
+    timestamp: entry.event_time,
+    method: "Resident QR",
+  };
+}
 
   if (!source.startsWith("manual_")) {
     return {
@@ -367,16 +383,17 @@ const AccessLog = () => {
               <div className="log-empty">No manual resident/staff entries yet</div>
             ) : (
               <table className="log-table">
-                <thead>
-                  <tr>
-                    <th>Person</th>
-                    <th>Type</th>
-                    <th>Unit</th>
-                    <th>Gate</th>
-                    <th>Status</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
+               <thead>
+  <tr>
+    <th>Person</th>
+    <th>Type</th>
+    <th>Method</th>
+    <th>Unit</th>
+    <th>Gate</th>
+    <th>Status</th>
+    <th>Time</th>
+  </tr>
+</thead>
 
                 <tbody>
                   {filteredManualLogs.map((entry) => {
@@ -396,6 +413,7 @@ const AccessLog = () => {
                         <td className="log-unit">
                           {entry.type === "staff" ? "Staff" : "Resident"}
                         </td>
+                        <td className="log-unit">{entry.method}</td>
 
                         <td className="log-unit">{entry.unit}</td>
                         <td className="log-unit">{entry.gate}</td>
