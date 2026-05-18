@@ -4,8 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:resident_app/features/auth/services/auth_service.dart';
 
 class ContactAdminService {
-  static const String _baseUrl = '10.187.184.51:8000';
-
   static Future<void> sendRequest({
     required String subject,
     required String message,
@@ -14,13 +12,22 @@ class ContactAdminService {
     debugPrint('CONTACT ADMIN SERVICE: start');
 
     final token = await AuthService.getToken();
-    final url = Uri.parse('$_baseUrl/contact-admin');
+
+    if (token == null || token.trim().isEmpty) {
+      throw Exception('No auth token found. Please log in again.');
+    }
+
+    final url = Uri.parse('${AuthService.baseUrl}/contact-admin');
+
+    final body = {
+      'subject': subject.trim(),
+      'message': message.trim(),
+      'urgency': urgency.trim(),
+    };
 
     debugPrint('CONTACT ADMIN SERVICE: url=$url');
-    debugPrint('CONTACT ADMIN SERVICE: tokenExists=${token != null}');
-    debugPrint(
-      'CONTACT ADMIN SERVICE: body=${jsonEncode({'subject': subject, 'message': message, 'urgency': urgency})}',
-    );
+    debugPrint('CONTACT ADMIN SERVICE: tokenExists=true');
+    debugPrint('CONTACT ADMIN SERVICE: body=${jsonEncode(body)}');
 
     final response = await http.post(
       url,
@@ -28,11 +35,7 @@ class ContactAdminService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'subject': subject,
-        'message': message,
-        'urgency': urgency,
-      }),
+      body: jsonEncode(body),
     );
 
     debugPrint('CONTACT ADMIN SERVICE: status=${response.statusCode}');

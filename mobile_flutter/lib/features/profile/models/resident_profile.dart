@@ -7,6 +7,8 @@ class ResidentProfile {
   final bool? isActive;
   final String? unit;
   final String? phone;
+  final DateTime? createdAt;
+  
 
   const ResidentProfile({
     this.id,
@@ -17,6 +19,7 @@ class ResidentProfile {
     this.isActive,
     this.unit,
     this.phone,
+    this.createdAt,
   });
 
   factory ResidentProfile.fromJson(Map<String, dynamic> json) {
@@ -42,6 +45,10 @@ class ResidentProfile {
       phone:
           _nullableString(json['phone_number']) ??
           _nullableString(json['phone']),
+
+      createdAt: json['created_at'] != null
+    ? DateTime.tryParse(json['created_at'].toString())
+    : null,          
     );
   }
 

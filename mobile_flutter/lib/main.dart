@@ -140,7 +140,11 @@ class _MyAppState extends State<MyApp> {
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/home':
-                return fadeSlideRoute(const MainNavigationScreen());
+  return fadeSlideRoute(
+    const FireAlertListener(
+      child: MainNavigationScreen(),
+    ),
+  );
               case '/welcome':
                 return fadeSlideRoute(const WelcomeScreen());
               case '/login':

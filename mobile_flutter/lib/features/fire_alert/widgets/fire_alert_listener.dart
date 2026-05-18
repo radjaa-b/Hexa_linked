@@ -53,10 +53,11 @@ class _FireAlertListenerState extends State<FireAlertListener> {
     if (session == null) return;
 
     try {
-      print('FIRE ALERT URL: ${AuthService.baseUrl}/alerts/me');
+      print('FIRE ALERT URL: ${AuthService.baseUrl}/alerts/fire-active');
+
       final response = await http.get(
         
-        Uri.parse('${AuthService.baseUrl}/alerts/me'),
+        Uri.parse('${AuthService.baseUrl}/alerts/fire-active'),
         headers: {
           'Authorization': 'Bearer ${session.accessToken}',
           'Content-Type': 'application/json',

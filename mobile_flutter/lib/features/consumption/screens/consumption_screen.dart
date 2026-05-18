@@ -7,6 +7,8 @@ import 'package:resident_app/features/consumption/widgets/bill_card.dart';
 import 'package:resident_app/features/consumption/widgets/live_meter_card.dart';
 import 'package:resident_app/features/consumption/widgets/period_toggle.dart';
 import 'package:resident_app/features/consumption/widgets/summary_row.dart';
+import 'package:resident_app/features/auth/services/auth_service.dart';
+import 'package:resident_app/features/profile/models/resident_profile.dart';
 
 class ConsumptionScreen extends StatefulWidget {
   const ConsumptionScreen({super.key});
