@@ -4,6 +4,8 @@ import 'package:resident_app/features/requests/models/parking_spot.dart';
 import 'package:resident_app/features/requests/services/requests_service.dart';
 import 'package:resident_app/l10n/app_localizations.dart';
 
+import 'dart:async';
+
 class ParkingScreen extends StatefulWidget {
   const ParkingScreen({super.key});
 
@@ -15,23 +17,48 @@ class _ParkingScreenState extends State<ParkingScreen> {
   List<ParkingSpot> _spots = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _refreshTimer;
 
   static const String _myResidentId = 'mock-resident-01';
 
   @override
   void initState() {
     super.initState();
-    _loadSpots();
+
+    // Initial load shows the spinner
+    _loadSpots(showSpinner: true);
+
+    // Background refresh every 2 seconds — no spinner
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _loadSpots(showSpinner: false),
+    );
   }
 
-  Future<void> _loadSpots() async {
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  /// [showSpinner] — true on first load and manual refresh, false for timer ticks.
+  Future<void> _loadSpots({bool showSpinner = false}) async {
+    if (showSpinner && mounted) {
+      setState(() => _isLoading = true);
+    }
+
     try {
       final spots = await RequestsService().fetchParkingSpots();
+      if (!mounted) return;
+
       setState(() {
-        _spots = spots;
+        // Rebuild a fresh list so Flutter always sees a new reference.
+        _spots = List<ParkingSpot>.from(spots);
         _isLoading = false;
+        _error = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = AppLocalizations.of(context)!.failedLoadParkingData;
         _isLoading = false;
@@ -61,58 +88,57 @@ class _ParkingScreenState extends State<ParkingScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _loadSpots();
-            },
+            onPressed: () => _loadSpots(showSpinner: true),
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-          ? Center(
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionHeader(
-                    title: t.residentParking,
-                    icon: Icons.home_rounded,
-                    color: const Color(0xFF2D4A3E),
-                  ),
-                  const SizedBox(height: 8),
-                  _Legend(showMySpot: true),
-                  const SizedBox(height: 12),
-                  _ParkingGrid(
-                    spots: _residentSpots,
-                    myResidentId: _myResidentId,
-                  ),
+              ? Center(
+                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: t.residentParking,
+                        icon: Icons.home_rounded,
+                        color: const Color(0xFF2D4A3E),
+                      ),
+                      const SizedBox(height: 8),
+                      _Legend(showMySpot: true),
+                      const SizedBox(height: 12),
+                      _ParkingGrid(
+                        spots: _residentSpots,
+                        myResidentId: _myResidentId,
+                      ),
 
-                  const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                  _SectionHeader(
-                    title: t.visitorParking,
-                    icon: Icons.directions_car_rounded,
-                    color: const Color(0xFF2D4A3E),
-                    badge: '$_availableVisitorCount ${t.available}',
+                      _SectionHeader(
+                        title: t.visitorParking,
+                        icon: Icons.directions_car_rounded,
+                        color: const Color(0xFF2D4A3E),
+                        badge: '$_availableVisitorCount ${t.available}',
+                      ),
+                      const SizedBox(height: 8),
+                      _Legend(showMySpot: false),
+                      const SizedBox(height: 12),
+                      _ParkingGrid(
+                        spots: _visitorSpots,
+                        myResidentId: _myResidentId,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _Legend(showMySpot: false),
-                  const SizedBox(height: 12),
-                  _ParkingGrid(
-                    spots: _visitorSpots,
-                    myResidentId: _myResidentId,
-                  ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 }
+
+// ─── Supporting widgets (unchanged) ──────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String title;
